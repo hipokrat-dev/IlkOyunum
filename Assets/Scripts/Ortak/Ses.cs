@@ -11,7 +11,7 @@ public class Ses : MonoBehaviour
     static Ses ornek;
 
     readonly Dictionary<Tur, AudioClip> klipler = new Dictionary<Tur, AudioClip>();
-    AudioSource tekSes, motor, ortam;
+    AudioSource tekSes, motor, ortam, konusma;
     float motorHedef;
 
     static Ses Ornek
@@ -42,6 +42,20 @@ public class Ses : MonoBehaviour
         if (!s.ortam.isPlaying) s.ortam.Play();
     }
 
+    // Profesörün seslendirmesi (aynı anda tek konuşma)
+    public static void Konus(AudioClip klip)
+    {
+        var s = Ornek;
+        s.konusma.Stop();
+        s.konusma.clip = klip;
+        s.konusma.Play();
+    }
+
+    public static void KonusmayiKes()
+    {
+        if (ornek != null) ornek.konusma.Stop();
+    }
+
     // ---------- Kurulum ----------
 
     void Awake()
@@ -49,6 +63,7 @@ public class Ses : MonoBehaviour
         tekSes = Kaynak(false, 1f);
         motor = Kaynak(true, 0f);
         ortam = Kaynak(true, 0.5f);
+        konusma = Kaynak(false, 1f);
 
         var rastgele = new System.Random(7);
         Func<float> gurultu = () => (float)rastgele.NextDouble() * 2f - 1f;

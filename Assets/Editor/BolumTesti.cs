@@ -38,11 +38,13 @@ static class BolumTesti
     public static void Akciger() => Calistir("Akciger");
     public static void Bobrek() => Calistir("Bobrek");
     public static void Mesane() => Calistir("Mesane");
+    public static void Menu() => Calistir("AnaMenu");
+    public static void Dokunmatik() => Calistir("Agiz", "Dokunmatik");
 
-    static void Calistir(string sahne)
+    static void Calistir(string sahne, string senaryo = null)
     {
         BolumSahneleri.SahneleriOlustur();
-        SessionState.SetString(Anahtar, sahne);
+        SessionState.SetString(Anahtar, senaryo ?? sahne);
         EditorSceneManager.OpenScene(BolumSahneleri.Yol(sahne));
         Baglan();
         EditorApplication.EnterPlaymode();
@@ -68,7 +70,7 @@ static class BolumTesti
     {
         double t = EditorApplication.timeSinceStartup;
         if (t - baslangic > 300) Bitir(2, "zaman aşımı, aşama " + asama);
-        if (!EditorApplication.isPlaying || BolumTemeli.Ornek == null || t < sonraki) return;
+        if (!EditorApplication.isPlaying || t < sonraki) return;
 
         if (klavye == null)
         {
@@ -79,8 +81,13 @@ static class BolumTesti
             klavye = InputSystem.AddDevice<Keyboard>();
         }
 
+        if (bolum == "AnaMenu") { MenuAdimi(t); return; }
+        if (BolumTemeli.Ornek == null) return;
+
+
         int onceki = asama;
         if (bolum == "Agiz") AgizAdimi(t);
+        else if (bolum == "Dokunmatik") DokunmatikAdimi(t);
         else if (bolum == "Bagirsak") BagirsakAdimi(t);
         else if (bolum == "KanKalp") KalpAdimi(t);
         else if (bolum == "Akciger") AkcigerAdimi(t);
@@ -346,13 +353,15 @@ static class BolumTesti
         {
             case 0: Cek("mesane_0_baslik"); Sonra(0.5, t, 1); break;
             case 1: Tus(Key.Space); Sonra(0.3, t, 2); break;
-            case 2: Tus(); Sonra(1.5, t, 3); break;
-            case 3: Cek("mesane_1_oyun"); Sonra(0.1, t, 4); break;
+            case 2: Tus(); Sonra(1.0, t, 3); break;
+            case 3: Cek("mesane_1_dusus"); Sonra(3.5, t, 30); break;
+            case 30: Cek("mesane_1b_yuzme"); Sonra(0.1, t, 4); break;
             case 4:
                 // En yakın kristale git, nişan alınca köpük at
                 if (b.DurumAdi == "Kart") { Tus(); Sonra(5, t, 5); break; }
                 var arac = GameObject.Find("Arac").transform;
                 var tuslar = new System.Collections.Generic.List<Key>();
+                tuslar.Add(Key.LeftShift);      // dipte kal (kristaller dipte)
                 if (b.YakinKristal(out Vector3 hedef))
                 {
                     Vector3 yon = hedef - arac.position;
@@ -367,12 +376,85 @@ static class BolumTesti
                 sonraki = t + 0.03;
                 break;
             case 5: Cek("mesane_3_kart"); Tus(Key.Space); Sonra(0.3, t, 6); break;
-            case 6: Tus(); Sonra(9, t, 7); break;
+            case 6: Tus(); Sonra(6.5, t, 60); break;
+            case 60: Cek("mesane_3b_uretra"); Sonra(11, t, 7); break;
             case 7:
                 Cek("mesane_4_final");
                 Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1,
                     $"durum={b.DurumAdi} hata={hata} kalanKristal={b.KalanKristal} sure={t - baslangic:0}");
                 break;
+        }
+    }
+
+    // ---------------------------------------------------------------- Ana menü
+
+    static void MenuAdimi(double t)
+    {
+        string sahne = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        switch (asama)
+        {
+            case 0: Sonra(1.5, t, 1); break;
+            case 1: Cek("menu_0"); Tus(Key.K); Sonra(0.4, t, 2); break;
+            case 2: Tus(); Sonra(0.4, t, 3); break;
+            case 3: Cek("menu_1_kartlar"); Tus(Key.Escape); Sonra(0.3, t, 4); break;
+            case 4: Tus(); Sonra(0.3, t, 5); break;
+            case 5: Tus(Key.Digit3); Sonra(0.3, t, 6); break;
+            case 6: Tus(); Sonra(2, t, 7); break;
+            case 7:
+                sahne = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+                Bitir(hata == 0 && sahne == "Bagirsak" ? 0 : 1, $"menuden acilan sahne={sahne} hata={hata}");
+                break;
+        }
+    }
+
+    // ---------------------------------------------------------------- Dokunmatik (tablet) kontrolleri
+
+    static Touchscreen dokunmatik;
+
+    static void Dokun(int parmak, UnityEngine.InputSystem.TouchPhase evre, float x, float y)
+    {
+        InputSystem.QueueStateEvent(dokunmatik, new TouchState
+        {
+            touchId = parmak, phase = evre, position = new Vector2(x * Screen.width, y * Screen.height)
+        });
+    }
+
+    static void DokunmatikAdimi(double t)
+    {
+        var b = AgizBolumu.Ornek;
+        if (dokunmatik == null) dokunmatik = InputSystem.AddDevice<Touchscreen>();
+        switch (asama)
+        {
+            case 0: Sonra(1, t, 1); break;
+            // Ekrana dokunup oyunu başlat
+            case 1: Dokun(1, UnityEngine.InputSystem.TouchPhase.Began, 0.5f, 0.5f); Sonra(0.2, t, 2); break;
+            case 2: Dokun(1, UnityEngine.InputSystem.TouchPhase.Ended, 0.5f, 0.5f); Sonra(0.5, t, 3); break;
+            case 3:
+                if (b.DurumAdi != "Oyun") Debug.LogError("DOKUNMATIK: dokunma oyunu başlatmadı");
+                ilkZ = GameObject.Find("Arac").transform.position.z;
+                // Sol yarıda çubuğu yukarı it, sağ yarıya basılı tut
+                Dokun(2, UnityEngine.InputSystem.TouchPhase.Began, 0.2f, 0.3f);
+                Sonra(0.1, t, 4); break;
+            case 4:
+                Dokun(2, UnityEngine.InputSystem.TouchPhase.Moved, 0.2f, 0.55f);
+                Dokun(3, UnityEngine.InputSystem.TouchPhase.Began, 0.8f, 0.4f);
+                Sonra(0.1, t, 5); break;
+            case 5:
+                Dokun(2, UnityEngine.InputSystem.TouchPhase.Stationary, 0.2f, 0.55f);
+                Dokun(3, UnityEngine.InputSystem.TouchPhase.Stationary, 0.8f, 0.4f);
+                if (t - asamaBasi > 1.3) asama = 6; else sonraki = t + 0.05;
+                break;
+            case 6:
+                float gidilen = GameObject.Find("Arac").transform.position.z - ilkZ;
+                bool kopuk = GameObject.Find("Kopuk") != null;
+                Cek("dokunmatik");
+                Dokun(2, UnityEngine.InputSystem.TouchPhase.Ended, 0.2f, 0.55f);
+                Dokun(3, UnityEngine.InputSystem.TouchPhase.Ended, 0.8f, 0.4f);
+                Debug.Log($"DOKUNMATIK gidilen={gidilen:0.0} kopuk={kopuk}");
+                if (gidilen < 4f) Debug.LogError("DOKUNMATIK: çubuk aracı ilerletmedi");
+                if (!kopuk) Debug.LogError("DOKUNMATIK: sağ yarıya dokunmak köpük atmadı");
+                Sonra(0.5, t, 7); break;
+            case 7: Bitir(hata == 0 ? 0 : 1, $"hata={hata}"); break;
         }
     }
 
@@ -392,7 +474,9 @@ static class BolumTesti
         if (string.IsNullOrEmpty(klasor)) klasor = "Temp/BolumTesti";
         Directory.CreateDirectory(klasor);
 
-        var tuval = BolumTemeli.Ornek.GetComponentInChildren<Canvas>();
+        var tuval = BolumTemeli.Ornek != null
+            ? BolumTemeli.Ornek.GetComponentInChildren<Canvas>()
+            : GameObject.Find("Menu")?.GetComponent<Canvas>();
         if (tuval != null)
         {
             tuval.renderMode = RenderMode.ScreenSpaceCamera;

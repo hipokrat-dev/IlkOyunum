@@ -12,6 +12,7 @@ static class BolumSahneleri
     // Derleme listesindeki sıra = oyundaki bölüm sırası
     static readonly (string ad, Type tur)[] Bolumler =
     {
+        ("AnaMenu", typeof(AnaMenu)),
         ("Agiz", typeof(AgizBolumu)),
         ("YemekBorusuMide", typeof(MideBolumu)),
         ("Bagirsak", typeof(BagirsakBolumu)),
@@ -22,6 +23,9 @@ static class BolumSahneleri
     };
 
     public static string Yol(string ad) => $"Assets/Scenes/{ad}.unity";
+
+    [MenuItem("Vücut Yolculuğu/Oyunu Baştan Oyna (Ana Menü)")]
+    public static void MenuOyna() => Oyna("AnaMenu");
 
     [MenuItem("Vücut Yolculuğu/Bölüm 1 (Ağız) Oyna")]
     public static void AgizOyna() => Oyna("Agiz");
@@ -56,12 +60,15 @@ static class BolumSahneleri
         };
     }
 
-    [MenuItem("Vücut Yolculuğu/Yıldızları Sıfırla")]
+    [MenuItem("Vücut Yolculuğu/İlerlemeyi Sıfırla (yıldızlar ve kartlar)")]
     public static void YildizlariSifirla()
     {
-        for (int bolum = 1; bolum <= Bolumler.Length; bolum++) PlayerPrefs.DeleteKey("yildiz_" + bolum);
+        foreach (var b in BolumListesi.Tumu)
+        {
+            foreach (string anahtar in new[] { "yildiz_", "bitti_", "kart_baslik_", "kart_metin_" }) PlayerPrefs.DeleteKey(anahtar + b.no);
+        }
         PlayerPrefs.Save();
-        Debug.Log("Kayıtlı yıldızlar sıfırlandı.");
+        Debug.Log("Kayıtlı ilerleme sıfırlandı.");
     }
 
     [MenuItem("Vücut Yolculuğu/Eksik Sahneleri Oluştur")]

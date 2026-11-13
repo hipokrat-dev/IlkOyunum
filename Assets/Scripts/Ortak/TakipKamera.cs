@@ -29,7 +29,10 @@ public class TakipKamera : MonoBehaviour
 
         var ek = kamera.GetUniversalAdditionalCameraData();
         ek.renderPostProcessing = true;
-        ek.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+        // Tablette daha hafif kenar yumuşatma
+        ek.antialiasing = Application.isMobilePlatform
+            ? AntialiasingMode.FastApproximateAntialiasing
+            : AntialiasingMode.SubpixelMorphologicalAntiAliasing;
         ek.antialiasingQuality = AntialiasingQuality.High;
 
         GoruntuEfektleri(g.transform);
@@ -68,6 +71,8 @@ public class TakipKamera : MonoBehaviour
         var kenar = profil.Add<Vignette>(true);
         kenar.intensity.value = 0.38f;
         kenar.smoothness.value = 0.5f;
+
+        if (Application.isMobilePlatform) return;      // alan derinliği ve gren tablette pahalı
 
         // Uzak arka planı yumuşatır; küçücük bir dünyada olma (makro) hissi verir.
         var derinlik = profil.Add<DepthOfField>(true);

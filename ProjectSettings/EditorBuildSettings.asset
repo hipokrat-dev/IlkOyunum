@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/AnaMenu.unity
+    guid: 7f997f3f465864f02a9822f3cf7a73b3
+  - enabled: 1
     path: Assets/Scenes/Agiz.unity
     guid: fa1906ab29e6a41f682d8a88ce636a8c
   - enabled: 1

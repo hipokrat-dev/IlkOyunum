@@ -19,6 +19,7 @@ public class AracKontrol : MonoBehaviour
     public float DonusGirdi => donusGirdi;
     public float IleriGirdi => ileriGirdi;
     public bool AtesGirdi { get; private set; }     // köpük tuşu şu an basılı mı
+    public bool DalisGirdi { get; private set; }    // dalış tuşu şu an basılı mı (SHIFT / dokunmatik DAL)
     public bool kopukAcik = true;                   // false: köpük tuşu köpük atmaz (bölüm başka işe kullanır)
 
     Rigidbody rb;
@@ -105,6 +106,7 @@ public class AracKontrol : MonoBehaviour
         donusGirdi = 0f;
         atesSayaci -= Time.deltaTime;
         AtesGirdi = false;
+        DalisGirdi = false;
 
         Ses.Motor(!kontrolAcik ? 0f : rayModu ? 1f : Mathf.Abs(mevcutHiz) / hiz);
         if (!kontrolAcik) return;
@@ -118,6 +120,7 @@ public class AracKontrol : MonoBehaviour
             if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) donusGirdi += 1f;
             if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) donusGirdi -= 1f;
             ates |= kb.spaceKey.isPressed;
+            DalisGirdi |= kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
         }
 
         var kol = Gamepad.current;
@@ -130,7 +133,15 @@ public class AracKontrol : MonoBehaviour
                 donusGirdi += cubuk.x;
             }
             ates |= kol.buttonSouth.isPressed || kol.rightTrigger.isPressed;
+            DalisGirdi |= kol.buttonEast.isPressed || kol.leftTrigger.isPressed;
         }
+        // Dokunmatik: sol yarıdaki çubuk sürer, sağ yarı köpük atar
+        DokunmatikGirdi.Guncelle();
+        ileriGirdi += DokunmatikGirdi.Cubuk.y;
+        donusGirdi += DokunmatikGirdi.Cubuk.x;
+        ates |= DokunmatikGirdi.Ates;
+        DalisGirdi |= DokunmatikGirdi.Dalis;
+
         ileriGirdi = Mathf.Clamp(ileriGirdi, -1f, 1f);
         donusGirdi = Mathf.Clamp(donusGirdi, -1f, 1f);
 

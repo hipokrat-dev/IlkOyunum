@@ -1,105 +1,215 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Oyun içi arayüz: mikrop sayacı, profesörün telsiz kutusu, Vücut Kartı ve ekran karartma.
-// Tüm bölümler aynı arayüzü kullanır.
+// Oyun içi arayüz: gösterge, profesörün telsiz kutusu, Vücut Kartı, ekran karartma,
+// bölüm sonu düğmeleri ve tablet için dokunmatik kontroller. Tüm bölümler aynı arayüzü kullanır.
+// Her en-boy oranında ekranı doldurur; göstergeler çentik/yuvarlak köşe dışındaki güvenli alana yerleşir.
 public class Arayuz : MonoBehaviour
 {
-    Font font;
-    Text sayac, ipucu, telsizMetin, kartBaslik, kartGovde, kartAlt, ortaYazi;
-    GameObject telsizKutu, kart;
+    Text sayac, ipucu, telsizMetin, kartBaslik, kartGovde, kartAlt, ortaYazi, atesYazisi;
+    GameObject telsizKutu, kart, ipucuPanel, dokunmatikKatman, dalisDugmesi, bitisDugmeleri;
     Image karartma;
-    RectTransform hedefIsareti;
+    RectTransform guvenli, hedefIsareti, cubukTaban, cubukTopuz, atesDugmesi, duraklatDugmesi;
+    Text devamYazisi;
+    RectTransform devamDugmesi, tekrarDugmesi, menuDugmesi;
+    Action devamIsi, tekrarIsi, menuIsi;
 
     readonly Queue<string> kuyruk = new Queue<string>();
+    readonly DugmeListesi dugmeler = new DugmeListesi();
     Coroutine akis;
+    Vector2Int sonEkran;
 
     public bool TelsizBos => akis == null && kuyruk.Count == 0;
+    public bool DuraklatIstendi { get; private set; }       // duraklat düğmesine bu karede basıldı
 
-    static readonly Vector2 Orta = new Vector2(0.5f, 0.5f);
+    static Vector2 Orta => Cizim.Orta;
 
     public static Arayuz Olustur(Transform ebeveyn)
     {
-        var g = new GameObject("Arayuz", typeof(Canvas), typeof(CanvasScaler));
-        g.transform.SetParent(ebeveyn, false);
-        g.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-
-        var olcek = g.GetComponent<CanvasScaler>();
-        olcek.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        olcek.referenceResolution = new Vector2(1920f, 1080f);
-        olcek.matchWidthOrHeight = 0.5f;
-
-        var a = g.AddComponent<Arayuz>();
+        var tuval = Cizim.Tuval("Arayuz", ebeveyn, out RectTransform guvenli);
+        var a = tuval.gameObject.AddComponent<Arayuz>();
+        a.guvenli = guvenli;
         a.Kur();
         return a;
     }
 
     void Kur()
     {
-        font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        if (font == null) font = Font.CreateDynamicFontFromOSFont("Arial", 32);
         var panelRengi = new Color(0.04f, 0.08f, 0.18f, 0.75f);
 
-        // Sol üst: mikrop sayacı
-        var sayacPanel = Panel("Sayac", transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f),
-            new Vector2(30f, -30f), new Vector2(380f, 84f), panelRengi);
-        sayac = Dolduran("Metin", sayacPanel.transform, 40, TextAnchor.MiddleCenter, Color.white, 10f);
+        // Sol üst: gösterge
+        var sayacPanel = Cizim.Panel("Sayac", guvenli, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f),
+            new Vector2(30f, -30f), new Vector2(400f, 84f), panelRengi);
+        sayac = Cizim.Dolduran("Metin", sayacPanel.transform, 38, TextAnchor.MiddleCenter, Color.white, 10f);
         sayac.fontStyle = FontStyle.Bold;
 
-        // Sağ üst: kontrol ipucu
-        var ipucuPanel = Panel("Ipucu", transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
-            new Vector2(-30f, -30f), new Vector2(680f, 84f), panelRengi);
-        ipucu = Dolduran("Metin", ipucuPanel.transform, 26, TextAnchor.MiddleCenter, new Color(0.85f, 0.92f, 1f), 10f);
+        // Sağ üst: duraklat düğmesi ve (klavyede) kontrol ipucu
+        duraklatDugmesi = Cizim.Dugme("Duraklat", guvenli, new Vector2(1f, 1f), new Vector2(1f, 1f),
+            new Vector2(-30f, -30f), new Vector2(84f, 84f), "II", 40, panelRengi, out _);
+        dugmeler.Ekle(duraklatDugmesi, () => DuraklatIstendi = true);
+
+        var ipucuResmi = Cizim.Panel("Ipucu", guvenli, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
+            new Vector2(-130f, -30f), new Vector2(660f, 84f), panelRengi);
+        ipucuPanel = ipucuResmi.gameObject;
+        ipucu = Cizim.Dolduran("Metin", ipucuResmi.transform, 26, TextAnchor.MiddleCenter, new Color(0.85f, 0.92f, 1f), 10f);
         ipucu.text = "WASD / Oklar: Sür    BOŞLUK: Köpük    ESC: Duraklat";
 
         // Alt orta: telsiz kutusu
-        var telsizPanel = Panel("Telsiz", transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-            new Vector2(0f, 40f), new Vector2(1400f, 190f), panelRengi);
+        var telsizPanel = Cizim.Panel("Telsiz", guvenli, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+            new Vector2(0f, 40f), new Vector2(1200f, 190f), panelRengi);
         telsizKutu = telsizPanel.gameObject;
-        var etiket = Yazi("Etiket", telsizPanel.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
+        var etiket = Cizim.Yazi("Etiket", telsizPanel.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
             new Vector2(0f, -12f), new Vector2(-60f, 40f), 26, TextAnchor.MiddleLeft, new Color(1f, 0.82f, 0.25f));
         etiket.text = "PROFESÖR  (telsiz)";
         etiket.fontStyle = FontStyle.Bold;
-        telsizMetin = Yazi("Mesaj", telsizPanel.transform, Vector2.zero, Vector2.one, Orta,
-            new Vector2(0f, -22f), new Vector2(-60f, -70f), 34, TextAnchor.UpperLeft, Color.white);
+        telsizMetin = Cizim.Yazi("Mesaj", telsizPanel.transform, Vector2.zero, Vector2.one, Orta,
+            new Vector2(0f, -22f), new Vector2(-60f, -70f), 32, TextAnchor.UpperLeft, Color.white);
         telsizKutu.SetActive(false);
 
-        // Orta: Vücut Kartı
-        var cerceve = Panel("VucutKarti", transform, Orta, Orta, Orta, Vector2.zero, new Vector2(1000f, 680f),
-            new Vector3(1f, 0.6f, 0.15f).ToColor());
-        kart = cerceve.gameObject;
-        var ic = Panel("Ic", cerceve.transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, new Vector2(-24f, -24f),
-            new Color(1f, 0.97f, 0.88f));
-        var koyuYazi = new Color(0.2f, 0.12f, 0.1f);
-        kartBaslik = Yazi("Baslik", ic.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -30f), new Vector2(-60f, 80f), 56, TextAnchor.MiddleCenter, new Color(0.8f, 0.25f, 0.3f));
-        kartBaslik.fontStyle = FontStyle.Bold;
-        kartGovde = Yazi("Govde", ic.transform, Vector2.zero, Vector2.one, Orta,
-            new Vector2(0f, -20f), new Vector2(-100f, -240f), 34, TextAnchor.UpperLeft, koyuYazi);
-        kartGovde.lineSpacing = 1.15f;
-        kartAlt = Yazi("Alt", ic.transform, Vector2.zero, new Vector2(1f, 0f), new Vector2(0.5f, 0f),
-            new Vector2(0f, 24f), new Vector2(-60f, 50f), 28, TextAnchor.MiddleCenter, new Color(0.45f, 0.35f, 0.3f));
-        kart.SetActive(false);
+        DokunmatikKatmaniKur();
 
-        // Ekran dışında kalan en yakın mikrobun yönünü gösteren işaret
-        var isaret = Panel("HedefIsareti", transform, Orta, Orta, Orta, Vector2.zero, new Vector2(30f, 30f),
+        // Ekran dışında kalan hedefin yönünü gösteren işaret
+        var isaret = Cizim.Panel("HedefIsareti", transform, Orta, Orta, Orta, Vector2.zero, new Vector2(30f, 30f),
             new Color(0.8f, 1f, 0.35f, 0.9f));
         hedefIsareti = (RectTransform)isaret.transform;
         hedefIsareti.localRotation = Quaternion.Euler(0f, 0f, 45f);
         isaret.gameObject.SetActive(false);
 
-        // En üstte: karartma ve bölüm sonu yazısı
-        karartma = Panel("Karartma", transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, Vector2.zero,
+        // Orta: Vücut Kartı
+        var cerceve = Cizim.Panel("VucutKarti", guvenli, Orta, Orta, Orta, Vector2.zero, new Vector2(1000f, 680f),
+            new Color(1f, 0.6f, 0.15f));
+        kart = cerceve.gameObject;
+        var ic = Cizim.Panel("Ic", cerceve.transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, new Vector2(-24f, -24f),
+            new Color(1f, 0.97f, 0.88f));
+        kartBaslik = Cizim.Yazi("Baslik", ic.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
+            new Vector2(0f, -30f), new Vector2(-60f, 80f), 56, TextAnchor.MiddleCenter, new Color(0.8f, 0.25f, 0.3f));
+        kartBaslik.fontStyle = FontStyle.Bold;
+        kartGovde = Cizim.Yazi("Govde", ic.transform, Vector2.zero, Vector2.one, Orta,
+            new Vector2(0f, -20f), new Vector2(-100f, -240f), 34, TextAnchor.UpperLeft, new Color(0.2f, 0.12f, 0.1f));
+        kartGovde.lineSpacing = 1.15f;
+        kartAlt = Cizim.Yazi("Alt", ic.transform, Vector2.zero, new Vector2(1f, 0f), new Vector2(0.5f, 0f),
+            new Vector2(0f, 24f), new Vector2(-60f, 50f), 28, TextAnchor.MiddleCenter, new Color(0.45f, 0.35f, 0.3f));
+        kart.SetActive(false);
+
+        // En üstte: tüm ekranı kaplayan karartma, orta yazı ve bölüm sonu düğmeleri
+        karartma = Cizim.Panel("Karartma", transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, Vector2.zero,
             new Color(0f, 0f, 0f, 0f));
-        ortaYazi = Yazi("OrtaYazi", transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, new Vector2(-200f, -200f),
+        ortaYazi = Cizim.Yazi("OrtaYazi", transform, Vector2.zero, Vector2.one, Orta, new Vector2(0f, 40f), new Vector2(-200f, -200f),
             60, TextAnchor.MiddleCenter, Color.white);
         ortaYazi.fontStyle = FontStyle.Bold;
         ortaYazi.lineSpacing = 1.2f;
+
+        var satir = Cizim.Kutu("BitisDugmeleri", transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+            new Vector2(0f, 70f), new Vector2(1200f, 110f));
+        bitisDugmeleri = satir.gameObject;
+        var yesil = new Color(0.15f, 0.55f, 0.3f, 0.95f);
+        var mavi = new Color(0.12f, 0.25f, 0.5f, 0.95f);
+        devamDugmesi = Cizim.Dugme("Devam", satir, Orta, Orta, new Vector2(-400f, 0f), new Vector2(360f, 100f), "DEVAM", 40, yesil, out devamYazisi);
+        tekrarDugmesi = Cizim.Dugme("Tekrar", satir, Orta, Orta, new Vector2(0f, 0f), new Vector2(360f, 100f), "TEKRAR OYNA", 36, mavi, out _);
+        menuDugmesi = Cizim.Dugme("Menu", satir, Orta, Orta, new Vector2(400f, 0f), new Vector2(360f, 100f), "ANA MENÜ", 36, mavi, out _);
+        dugmeler.Ekle(devamDugmesi, () => devamIsi?.Invoke());
+        dugmeler.Ekle(tekrarDugmesi, () => tekrarIsi?.Invoke());
+        dugmeler.Ekle(menuDugmesi, () => menuIsi?.Invoke());
+        bitisDugmeleri.SetActive(false);
     }
 
+    // Tablet kontrolleri: solda sürüş çubuğu, sağda köpük ve (gerekirse) dalış düğmesi
+    void DokunmatikKatmaniKur()
+    {
+        var katman = Cizim.Kutu("Dokunmatik", transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, Vector2.zero);
+        dokunmatikKatman = katman.gameObject;
+        var soluk = new Color(1f, 1f, 1f, 0.16f);
+
+        cubukTaban = (RectTransform)Cizim.Panel("CubukTaban", katman, Vector2.zero, Vector2.zero, Orta,
+            new Vector2(230f, 230f), new Vector2(300f, 300f), soluk).transform;
+        cubukTaban.GetComponent<Image>().sprite = Cizim.Daire;
+        cubukTopuz = (RectTransform)Cizim.Panel("CubukTopuz", cubukTaban, Orta, Orta, Orta, Vector2.zero,
+            new Vector2(130f, 130f), new Color(1f, 1f, 1f, 0.4f)).transform;
+        cubukTopuz.GetComponent<Image>().sprite = Cizim.Daire;
+
+        atesDugmesi = (RectTransform)Cizim.Panel("Ates", katman, new Vector2(1f, 0f), new Vector2(1f, 0f), Orta,
+            new Vector2(-200f, 300f), new Vector2(230f, 230f), new Color(1f, 1f, 1f, 0.2f)).transform;
+        atesDugmesi.GetComponent<Image>().sprite = Cizim.Daire;
+        atesYazisi = Cizim.Dolduran("Yazi", atesDugmesi, 34, TextAnchor.MiddleCenter, Color.white, 6f);
+        atesYazisi.text = "KÖPÜK";
+        atesYazisi.fontStyle = FontStyle.Bold;
+
+        var dalis = Cizim.Panel("Dalis", katman, new Vector2(1f, 0f), new Vector2(1f, 0f), Orta,
+            new Vector2(-440f, 180f), new Vector2(200f, 200f), new Color(0.4f, 0.75f, 1f, 0.3f));
+        dalis.sprite = Cizim.Daire;
+        dalisDugmesi = dalis.gameObject;
+        var dalisYazisi = Cizim.Dolduran("Yazi", dalis.transform, 34, TextAnchor.MiddleCenter, Color.white, 6f);
+        dalisYazisi.text = "DAL";
+        dalisYazisi.fontStyle = FontStyle.Bold;
+        dalisDugmesi.SetActive(false);
+
+        DokunmatikGirdi.dalisAlani = null;
+        DokunmatikGirdi.digerDugme = p => RectTransformUtility.RectangleContainsScreenPoint(duraklatDugmesi, p, null);
+        dokunmatikKatman.SetActive(false);
+    }
+
+    void OnDestroy()
+    {
+        DokunmatikGirdi.dalisAlani = null;
+        DokunmatikGirdi.digerDugme = null;
+    }
+
+    void Update()
+    {
+        DokunmatikGirdi.Guncelle();
+
+        // Ekran boyutu ya da yönü değişirse güvenli alanı yeniden uygula
+        var ekran = new Vector2Int(Screen.width, Screen.height);
+        if (ekran != sonEkran)
+        {
+            sonEkran = ekran;
+            Cizim.GuvenliAlaniUygula(guvenli);
+        }
+
+        // Dokunmatik kontroller yalnızca dokunmatik kullanılırken ve oyun sırasında görünür
+        bool goster = DokunmatikGirdi.Etkin && kontrollerAcik;
+        if (dokunmatikKatman.activeSelf != goster) dokunmatikKatman.SetActive(goster);
+        ipucuPanel.SetActive(!DokunmatikGirdi.Etkin);
+        if (!goster) return;
+
+        // Çubuk, parmağın dokunduğu yerde belirir; bırakılınca köşesine döner
+        float menzil = Mathf.Max(60f, Screen.height * 0.13f);
+        if (DokunmatikGirdi.CubukTutuluyor) cubukTaban.position = DokunmatikGirdi.CubukMerkezi;
+        else cubukTaban.anchoredPosition = new Vector2(230f, 230f);
+        cubukTopuz.position = cubukTaban.position + (Vector3)(DokunmatikGirdi.Cubuk * menzil);
+        atesDugmesi.localScale = Vector3.one * (DokunmatikGirdi.Ates ? 0.9f : 1f);
+    }
+
+    bool kontrollerAcik;
+
     // ---------- Dışarıya açık işlevler ----------
+
+    // Bu karede bir ekran düğmesine basıldıysa işini yapar ve true döner.
+    public bool DugmeleriIsle()
+    {
+        DuraklatIstendi = false;
+        DokunmatikGirdi.Guncelle();
+        return dugmeler.Isle();
+    }
+
+    // Oyun sırasında dokunmatik kontrolleri (çubuk, köpük) gösterir/gizler.
+    public void Kontroller(bool acik) => kontrollerAcik = acik;
+
+    // Dalış düğmesi (yalnızca mesanede)
+    public void DalisDugmesi(bool goster)
+    {
+        dalisDugmesi.SetActive(goster);
+        var alan = (RectTransform)dalisDugmesi.transform;
+        DokunmatikGirdi.dalisAlani = goster
+            ? p => RectTransformUtility.RectangleContainsScreenPoint(alan, p, null)
+            : (Func<Vector2, bool>)null;
+    }
+
+    // Köpük düğmesinin üstündeki yazı (ör. kalpte "ATIL")
+    public void AtesEtiketi(string yazi) => atesYazisi.text = yazi;
 
     // Sol üstteki gösterge (mikrop sayısı, kalkan, kalan yol...). vurgu: kısa bir büyüyüp küçülme.
     public void Gosterge(string metin, bool vurgu = false)
@@ -108,7 +218,7 @@ public class Arayuz : MonoBehaviour
         if (vurgu) StartCoroutine(SayacVurgusu());
     }
 
-    // Sağ üstteki kontrol ipucu
+    // Sağ üstteki kontrol ipucu (yalnızca klavyeyle oynarken görünür)
     public void Ipucu(string metin) => ipucu.text = metin;
 
     IEnumerator SayacVurgusu()
@@ -142,6 +252,7 @@ public class Arayuz : MonoBehaviour
             kuyruk.Clear();
             if (akis != null) StopCoroutine(akis);
             akis = null;
+            Ses.KonusmayiKes();
         }
         kuyruk.Enqueue(mesaj);
         if (akis == null) akis = StartCoroutine(TelsizAkisi());
@@ -159,27 +270,46 @@ public class Arayuz : MonoBehaviour
 
     public void KartGizle() => kart.SetActive(false);
 
-    public IEnumerator Karart(float sure)
+    // Ekranı verilen renge (varsayılan siyah) kapatır.
+    public IEnumerator Karart(float sure, Color? renk = null)
     {
+        Color bas = karartma.color;
+        Color hedef = renk ?? Color.black;
+        hedef.a = 1f;
+        if (bas.a < 0.01f) bas = new Color(hedef.r, hedef.g, hedef.b, 0f);
         for (float t = 0f; t < 1f; t += Time.deltaTime / sure)
         {
-            karartma.color = new Color(0f, 0f, 0f, t);
+            karartma.color = Color.Lerp(bas, hedef, t);
             yield return null;
         }
-        karartma.color = Color.black;
+        karartma.color = hedef;
     }
 
     public IEnumerator Aydinlat(float sure)
     {
-        for (float t = 1f; t > 0f; t -= Time.deltaTime / sure)
+        Color bas = karartma.color;
+        for (float t = 0f; t < 1f; t += Time.deltaTime / sure)
         {
-            karartma.color = new Color(0f, 0f, 0f, t);
+            karartma.color = new Color(bas.r, bas.g, bas.b, bas.a * (1f - t));
             yield return null;
         }
         karartma.color = Color.clear;
     }
 
     public void OrtaYazi(string metin) => ortaYazi.text = metin;
+
+    // Bölüm sonu düğmeleri. İşi null olan düğme gösterilmez.
+    public void BitisDugmeleri(Action devam, Action tekrar, Action menu, string devamEtiketi = "DEVAM")
+    {
+        devamIsi = devam;
+        tekrarIsi = tekrar;
+        menuIsi = menu;
+        devamYazisi.text = devamEtiketi;
+        devamDugmesi.gameObject.SetActive(devam != null);
+        tekrarDugmesi.gameObject.SetActive(tekrar != null);
+        menuDugmesi.gameObject.SetActive(menu != null);
+        bitisDugmeleri.SetActive(true);
+    }
 
     // ---------- İç işleyiş ----------
 
@@ -190,64 +320,27 @@ public class Arayuz : MonoBehaviour
         {
             string mesaj = kuyruk.Dequeue();
             Ses.Cal(Ses.Tur.Telsiz, 0.6f);
-            for (float harf = 0f; harf < mesaj.Length; harf += Time.deltaTime * 45f)
+
+            // Seslendirme varsa yazı konuşmayla aynı hızda akar ve konuşma bitene kadar ekranda kalır
+            AudioClip konusma = Seslendirme.Bul(mesaj);
+            float yazmaHizi = 45f, bekleme = 2.2f + mesaj.Length * 0.03f;
+            if (konusma != null)
+            {
+                yield return new WaitForSeconds(0.25f);
+                Ses.Konus(konusma);
+                yazmaHizi = Mathf.Max(20f, mesaj.Length / (konusma.length * 0.85f));
+                bekleme = konusma.length * 0.15f + 0.6f;
+            }
+
+            for (float harf = 0f; harf < mesaj.Length; harf += Time.deltaTime * yazmaHizi)
             {
                 telsizMetin.text = mesaj.Substring(0, (int)harf);
                 yield return null;
             }
             telsizMetin.text = mesaj;
-            yield return new WaitForSeconds(2.2f + mesaj.Length * 0.03f);
+            yield return new WaitForSeconds(bekleme);
         }
         telsizKutu.SetActive(false);
         akis = null;
     }
-
-    RectTransform Kutu(string ad, Transform ebeveyn, Vector2 capaMin, Vector2 capaMax, Vector2 pivot,
-        Vector2 konum, Vector2 boyut)
-    {
-        var g = new GameObject(ad, typeof(RectTransform));
-        var r = (RectTransform)g.transform;
-        r.SetParent(ebeveyn, false);
-        r.anchorMin = capaMin;
-        r.anchorMax = capaMax;
-        r.pivot = pivot;
-        r.anchoredPosition = konum;
-        r.sizeDelta = boyut;
-        return r;
-    }
-
-    Image Panel(string ad, Transform ebeveyn, Vector2 capaMin, Vector2 capaMax, Vector2 pivot,
-        Vector2 konum, Vector2 boyut, Color renk)
-    {
-        var resim = Kutu(ad, ebeveyn, capaMin, capaMax, pivot, konum, boyut).gameObject.AddComponent<Image>();
-        resim.color = renk;
-        resim.raycastTarget = false;
-        return resim;
-    }
-
-    Text Yazi(string ad, Transform ebeveyn, Vector2 capaMin, Vector2 capaMax, Vector2 pivot,
-        Vector2 konum, Vector2 boyut, int punto, TextAnchor hiza, Color renk)
-    {
-        var yazi = Kutu(ad, ebeveyn, capaMin, capaMax, pivot, konum, boyut).gameObject.AddComponent<Text>();
-        yazi.font = font;
-        yazi.fontSize = punto;
-        yazi.alignment = hiza;
-        yazi.color = renk;
-        yazi.horizontalOverflow = HorizontalWrapMode.Wrap;
-        yazi.verticalOverflow = VerticalWrapMode.Overflow;
-        yazi.raycastTarget = false;
-        return yazi;
-    }
-
-    // Ebeveynini (kenar boşluğu bırakarak) dolduran yazı.
-    Text Dolduran(string ad, Transform ebeveyn, int punto, TextAnchor hiza, Color renk, float bosluk)
-    {
-        return Yazi(ad, ebeveyn, Vector2.zero, Vector2.one, Orta, Vector2.zero,
-            new Vector2(-2f * bosluk, -2f * bosluk), punto, hiza, renk);
-    }
-}
-
-static class RenkUzantilari
-{
-    public static Color ToColor(this Vector3 v) => new Color(v.x, v.y, v.z);
 }

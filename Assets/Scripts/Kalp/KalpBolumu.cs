@@ -327,6 +327,7 @@ public class KalpBolumu : BolumTemeli
         {
             asama = Asama.Kulakcik;
             arac.kopukAcik = false;
+            arayuz.AtesEtiketi("ATIL");
             arayuz.Ipucu("BOŞLUK: Kapak açıkken atıl    ESC: Duraklat");
             arayuz.Gosterge("Sağ kulakçık");
             arayuz.Telsiz("Kalbe girdin: burası sağ kulakçık! Kalbin dört odacığı vardır: iki kulakçık ve iki karıncık.", true);
@@ -427,6 +428,7 @@ public class KalpBolumu : BolumTemeli
                 else
                 {
                     arac.kopukAcik = true;
+                    arayuz.AtesEtiketi("KÖPÜK");
                     arayuz.Gosterge("Akciğer atardamarı", true);
                     arayuz.Ipucu("WASD: Süzül    BOŞLUK: Köpük    ESC: Duraklat");
                     arayuz.Telsiz("Geçtin! Kalp günde yaklaşık 100.000 kez atar ve kanı hiç durmadan pompalar.", true);

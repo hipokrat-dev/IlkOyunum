@@ -35,7 +35,8 @@ public abstract class BolumTemeli : MonoBehaviour
     // Bölüm sonu ekranının yazıları (final bölümü kendi özetini gösterir)
     protected virtual string BitisBasligi => $"BÖLÜM {BolumNo} TAMAMLANDI";
     protected virtual string SonrakiSatiri => $"Sıradaki durak: {SonrakiDurak}";
-    protected virtual string DevamYazisi => "Devam etmek için BOŞLUK   •   Tekrar oynamak için R";
+    protected virtual string DevamYazisi => "BOŞLUK: Devam   •   R: Tekrar   •   M: Ana menü";
+    protected virtual string DevamDugmesi => "DEVAM";
     protected virtual bool Puanli => true;                // false: gezinti bölümü, yıldız/istatistik yok
     protected abstract string KartBasligi { get; }
     protected abstract string KartMetni { get; }
@@ -67,7 +68,7 @@ public abstract class BolumTemeli : MonoBehaviour
         int enIyi = Puanli ? EnIyiYildiz(BolumNo) : 0;
         string rekor = enIyi > 0 ? "\n<color=#FFD040><size=50>" + Yildizlar(enIyi) + "</size></color>" : "";
         arayuz.OrtaYazi($"VÜCUT YOLCULUĞU\n<size=44>Bölüm {BolumNo}: {BolumAdi}</size>{rekor}\n\n" +
-                        "<size=34>Başlamak için BOŞLUK tuşuna bas</size>");
+                        "<size=34>Başlamak için ekrana dokun ya da BOŞLUK'a bas</size>");
     }
 
     protected virtual void OnDestroy()
@@ -93,14 +94,16 @@ public abstract class BolumTemeli : MonoBehaviour
     {
         var kb = Keyboard.current;
         var kol = Gamepad.current;
-        bool onay = (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) ||
-                    (kol != null && kol.buttonSouth.wasPressedThisFrame);
+        bool dugme = arayuz.DugmeleriIsle();
+        bool tus = (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) ||
+                   (kol != null && kol.buttonSouth.wasPressedThisFrame);
+        bool onay = tus || (DokunmatikGirdi.DokunmaBasladi && !dugme);       // ekrana dokunmak da onaydır
+        bool duraklatTusu = (kb != null && kb.escapeKey.wasPressedThisFrame) ||
+                            (kol != null && kol.startButton.wasPressedThisFrame) || arayuz.DuraklatIstendi;
 
-        if (durum == Durum.Oyun && ((kb != null && kb.escapeKey.wasPressedThisFrame) ||
-                                    (kol != null && kol.startButton.wasPressedThisFrame)))
-        {
-            Duraklat(!duraklatildi);
-        }
+        if (durum == Durum.Oyun && duraklatTusu) Duraklat(!duraklatildi);
+        else if (duraklatildi && onay) Duraklat(false);
+        arayuz.Kontroller(durum == Durum.Oyun && !duraklatildi && arac.kontrolAcik);
         if (duraklatildi) return;
 
         switch (durum)
@@ -118,17 +121,20 @@ public abstract class BolumTemeli : MonoBehaviour
                 break;
 
             case Durum.Bitti:
-                if (onay && SonrakiVar)
-                {
-                    SceneManager.LoadScene(SonrakiSahne);
-                }
-                else if ((kb != null && kb.rKey.wasPressedThisFrame) || (kol != null && kol.buttonNorth.wasPressedThisFrame))
-                {
-                    SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-                }
+                // Dokunmatikte ekrandaki düğmeler kullanılır; klavyede kısayollar
+                if (tus && SonrakiVar) SahneAc(SonrakiSahne);
+                else if ((kb != null && kb.rKey.wasPressedThisFrame) || (kol != null && kol.buttonNorth.wasPressedThisFrame)) SahneAc(null);
+                else if (kb != null && kb.mKey.wasPressedThisFrame && MenuVar) SahneAc(AnaMenuSahnesi);
                 break;
         }
     }
+
+    public const string AnaMenuSahnesi = "AnaMenu";
+
+    static bool MenuVar => Application.CanStreamedLevelBeLoaded(AnaMenuSahnesi);
+
+    // null: bu bölümü yeniden yükle
+    static void SahneAc(string sahne) => SceneManager.LoadScene(sahne ?? SceneManager.GetActiveScene().name);
 
     bool SonrakiVar => !string.IsNullOrEmpty(SonrakiSahne) && Application.CanStreamedLevelBeLoaded(SonrakiSahne);
 
@@ -138,7 +144,7 @@ public abstract class BolumTemeli : MonoBehaviour
         Time.timeScale = dur ? 0f : 1f;
         AudioListener.pause = dur;
         arayuz.Perde(dur ? 0.55f : 0f);
-        arayuz.OrtaYazi(dur ? "DURAKLATILDI\n\n<size=34>Devam etmek için ESC tuşuna bas</size>" : "");
+        arayuz.OrtaYazi(dur ? "DURAKLATILDI\n\n<size=34>Devam etmek için ekrana dokun ya da ESC'ye bas</size>" : "");
     }
 
     // Bölümün hedefi tamamlanınca çağrılır: tebrik, Vücut Kartı ve bölüm sonu akışını başlatır.
@@ -159,9 +165,16 @@ public abstract class BolumTemeli : MonoBehaviour
         arac.kontrolAcik = false;
         Ses.Cal(Ses.Tur.Basari);
         arayuz.KartGoster(KartBasligi, KartMetni, "");
+        if (!kayitKapali)
+        {
+            // Kart koleksiyona eklenir (ana menüden bakılabilir)
+            PlayerPrefs.SetString("kart_baslik_" + BolumNo, KartBasligi);
+            PlayerPrefs.SetString("kart_metin_" + BolumNo, KartMetni);
+            PlayerPrefs.Save();
+        }
         yield return new WaitForSeconds(1.2f);
 
-        arayuz.KartAltYazi("Devam etmek için BOŞLUK tuşuna bas");
+        arayuz.KartAltYazi("Devam etmek için ekrana dokun ya da BOŞLUK'a bas");
         kartHazir = true;
     }
 
@@ -188,7 +201,14 @@ public abstract class BolumTemeli : MonoBehaviour
             PlayerPrefs.Save();
         }
 
-        string devam = SonrakiVar ? DevamYazisi : "Tekrar oynamak için R tuşuna bas";
+        if (!kayitKapali)
+        {
+            PlayerPrefs.SetInt("bitti_" + BolumNo, 1);
+            PlayerPrefs.Save();
+        }
+        string devam = DokunmatikGirdi.Etkin ? "" : SonrakiVar ? DevamYazisi : "R: Tekrar   •   M: Ana menü";
+        arayuz.BitisDugmeleri(SonrakiVar ? () => SahneAc(SonrakiSahne) : (System.Action)null, () => SahneAc(null),
+            MenuVar ? () => SahneAc(AnaMenuSahnesi) : (System.Action)null, DevamDugmesi);
         string puan = Puanli
             ? $"<color=#FFD040><size=90>{Yildizlar(yildiz)}</size></color>\n<size=36>{SonucSatiri()}</size>\n"
             : "";

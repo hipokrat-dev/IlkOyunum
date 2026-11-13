@@ -79,7 +79,8 @@ public class AkcigerBolumu : BolumTemeli
         var modeller = new List<Mesh>(Resources.LoadAll<Mesh>("Akciger/AkcigerModelleri"));
         if (modeller.Count == 0) Debug.LogError("Alveol modelleri bulunamadı: Resources/Akciger/AkcigerModelleri");
 
-        for (float ks = 52f; ks < 208f; ks += 2.6f)
+        float aralik = Application.isMobilePlatform ? 4.2f : 2.6f;      // tablette daha az küme
+        for (float ks = 52f; ks < 208f; ks += aralik)
         {
             // Yolun çevresinde, sapı dışarıda ve kesecikleri yola dönük
             float aci = Random.value * 2f * Mathf.PI;
