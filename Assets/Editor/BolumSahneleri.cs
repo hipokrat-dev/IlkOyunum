@@ -16,6 +16,20 @@ static class BolumSahneleri
         AgizSahnesiOlustur();
     }
 
+    // Ağız sahnesini açıp oyunu başlatır. Menüden ya da komut satırından
+    // (-executeMethod BolumSahneleri.AgizOyna) çağrılabilir.
+    [MenuItem("Vücut Yolculuğu/Ağız Bölümünü Oyna")]
+    public static void AgizOyna()
+    {
+        if (EditorApplication.isPlaying) return;
+        EditorSceneManager.OpenScene(AgizYolu);
+        EditorApplication.delayCall += () =>
+        {
+            EditorApplication.ExecuteMenuItem("Window/General/Game");
+            EditorApplication.EnterPlaymode();
+        };
+    }
+
     public static void AgizSahnesiOlustur()
     {
         var sahne = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
