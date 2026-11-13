@@ -3,6 +3,8 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 
 // Ağız bölümünün otomatik duman testi. Komut satırından çalıştırılır:
 //   Unity -batchmode -projectPath . -executeMethod AgizTesti.Calistir
@@ -15,6 +17,8 @@ static class AgizTesti
     static bool bagli;
     static int asama, hata;
     static double sonraki, baslangic;
+    static Keyboard klavye;
+    static float ilkZ;
 
     static AgizTesti()
     {
@@ -50,7 +54,33 @@ static class AgizTesti
 
         switch (asama)
         {
-            case 0: sonraki = t + 2.5; asama++; break;
+            case 0: Cek("0_baslik"); asama = 10; sonraki = t + 0.5; break;
+
+            // Gerçek klavye girdisi: BOŞLUK ile başlat, W ile sür, BOŞLUK ile köpük at
+            case 10:
+                InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+                InputSystem.settings.editorInputBehaviorInPlayMode =
+                    InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+                klavye = InputSystem.AddDevice<Keyboard>();
+                InputSystem.QueueStateEvent(klavye, new KeyboardState(Key.Space));
+                asama++; sonraki = t + 0.3; break;
+            case 11:
+                InputSystem.QueueStateEvent(klavye, new KeyboardState());
+                if (bolum.DurumAdi != "Oyun") { Debug.LogError("GIRDI: BOŞLUK oyunu başlatmadı"); bolum.Basla(); }
+                asama++; sonraki = t + 0.3; break;
+            case 12:
+                ilkZ = GameObject.Find("Arac").transform.position.z;
+                InputSystem.QueueStateEvent(klavye, new KeyboardState(Key.W, Key.Space));
+                asama++; sonraki = t + 1.2; break;
+            case 13:
+                float gidilen = GameObject.Find("Arac").transform.position.z - ilkZ;
+                bool kopuk = GameObject.Find("Kopuk") != null;
+                InputSystem.QueueStateEvent(klavye, new KeyboardState());
+                Debug.Log($"GIRDI gidilen={gidilen:0.0} kopuk={kopuk}");
+                if (gidilen < 4f) Debug.LogError("GIRDI: W tuşu aracı ilerletmedi");
+                if (!kopuk) Debug.LogError("GIRDI: BOŞLUK köpük atmadı");
+                asama = 1; sonraki = t + 1.5; break;
+
             case 1: Cek("1_baslangic"); bolum.DalgaGonder(); sonraki = t + 1.6; asama++; break;
             case 2: Cek("2_dalga"); sonraki = t + 0.3; asama++; break;
             case 3:

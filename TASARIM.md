@@ -42,4 +42,8 @@ Her bölüm sonunda bir **Vücut Kartı** açılır (o organla ilgili 3 ilginç 
 - Araç da Blender'da üretilir: `Araclar/blender/arac_modeli.py` → `Assets/Resources/Ortak` (tüm bölümlerde kullanılır).
 - Tükürük dalgası ve köpük hâlâ basit şekillerden oluşuyor; sıradaki görsel iş bunlar.
 
+- Oyuncu deneyimi: başlangıç ekranı, ESC ile duraklatma, oyun kolu desteği, kodla üretilen sesler
+  (motor, köpük, erime, dalga, telsiz, kalp atışı), kolonilerin üstünde soluk ışık, ekran dışındaki
+  en yakın koloniye yön işareti, bölüm sonunda süre ve 1–3 yıldız (dalgaya yakalanmadan ve hızlı bitirene 3).
+
 Ağız bölümü bitip oynanabilir olunca diğer bölümler aynı altyapı üzerine tek tek eklenir.

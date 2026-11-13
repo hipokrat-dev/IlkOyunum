@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 // 10 çürük bakterisi kolonisini temizle -> Vücut Kartı -> yutkunma refleksi -> bölüm sonu.
 public class AgizBolumu : MonoBehaviour
 {
-    enum Durum { Oyun, Kart, Yutkunma, Bitti }
+    enum Durum { Baslik, Oyun, Kart, Yutkunma, Bitti }
     enum DisTuru { Kesici, Kopek, KucukAzi, Azi }
 
     class Dis
@@ -43,8 +43,11 @@ public class AgizBolumu : MonoBehaviour
     Collider arkaDuvar;
     Transform kok;
 
-    Durum durum = Durum.Oyun;
-    int temizlenen;
+    Camera kameraGozu;
+    Durum durum = Durum.Baslik;
+    int temizlenen, dalgaCarpma;
+    float baslangicZamani, sure;
+    bool duraklatildi;
     float dalgaSayaci = 22f, disKontrolSayaci;
     bool ilkDalga = true, kartHazir, carpmaAnlatildi;
 
@@ -64,11 +67,23 @@ public class AgizBolumu : MonoBehaviour
         arac = AracKontrol.Olustur(new Vector3(0f, 0.1f, -4f));
         kamera = TakipKamera.Olustur(arac.transform, new Color(0.05f, 0.01f, 0.015f));
         kamera.sinir = KameraSiniri;
+        kameraGozu = kamera.GetComponent<Camera>();
 
         MikroplariKur();
 
         arayuz = Arayuz.Olustur(transform);
         arayuz.Sayac(0, HedefMikrop);
+
+        // Başlangıç ekranı
+        arac.kontrolAcik = false;
+        arayuz.Perde(0.55f);
+        arayuz.OrtaYazi("VÜCUT YOLCULUĞU\n<size=44>Bölüm 1: Ağız</size>\n\n<size=34>Başlamak için BOŞLUK tuşuna bas</size>");
+    }
+
+    void OnDestroy()
+    {
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
     }
 
     void Start()
@@ -84,6 +99,18 @@ public class AgizBolumu : MonoBehaviour
         yansima.resolution = 128;
         yansima.hdr = true;
         yansima.RenderProbe();
+    }
+
+    public void Basla()
+    {
+        if (durum != Durum.Baslik) return;
+        durum = Durum.Oyun;
+        baslangicZamani = Time.time;
+        arac.kontrolAcik = true;
+        arayuz.Perde(0f);
+        arayuz.OrtaYazi("");
+        Ses.Cal(Ses.Tur.Tik);
+        Ses.OrtamBaslat();
 
         arayuz.Telsiz("Çırak, beni duyuyor musun? Küçülme ışını seni ve kapsülü bir insanın ağzına göndermiş! Sakin ol, sana yol göstereceğim.");
         arayuz.Telsiz("Altındaki pürüzlü zemin dil. Çevrendeki dev beyaz kayalar ise dişler.");
@@ -301,6 +328,7 @@ public class AgizBolumu : MonoBehaviour
     void MikropTemizlendi(Mikrop mikrop)
     {
         temizlenen++;
+        kamera.sarsinti = Mathf.Max(kamera.sarsinti, 0.05f);
         arayuz.Sayac(temizlenen, HedefMikrop);
 
         if (temizlenen == 1)
@@ -320,10 +348,26 @@ public class AgizBolumu : MonoBehaviour
     void Update()
     {
         var kb = Keyboard.current;
+        var kol = Gamepad.current;
+        bool onay = (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) ||
+                    (kol != null && kol.buttonSouth.wasPressedThisFrame);
+
+        if (durum == Durum.Oyun && ((kb != null && kb.escapeKey.wasPressedThisFrame) ||
+                                    (kol != null && kol.startButton.wasPressedThisFrame)))
+        {
+            Duraklat(!duraklatildi);
+        }
+        if (duraklatildi) return;
+
         switch (durum)
         {
+            case Durum.Baslik:
+                if (onay) Basla();
+                break;
+
             case Durum.Oyun:
                 DisleriAnlat();
+                HedefiGoster();
                 dalgaSayaci -= Time.deltaTime;
                 if (dalgaSayaci <= 0f)
                 {
@@ -333,13 +377,57 @@ public class AgizBolumu : MonoBehaviour
                 break;
 
             case Durum.Kart:
-                if (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) KartiKapat();
+                if (onay) KartiKapat();
                 break;
 
             case Durum.Bitti:
-                if (kb != null && kb.rKey.wasPressedThisFrame) SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+                if ((kb != null && kb.rKey.wasPressedThisFrame) || (kol != null && kol.buttonSouth.wasPressedThisFrame))
+                {
+                    SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+                }
                 break;
         }
+    }
+
+    void Duraklat(bool dur)
+    {
+        duraklatildi = dur;
+        Time.timeScale = dur ? 0f : 1f;
+        AudioListener.pause = dur;
+        arayuz.Perde(dur ? 0.55f : 0f);
+        arayuz.OrtaYazi(dur ? "DURAKLATILDI\n\n<size=34>Devam etmek için ESC tuşuna bas</size>" : "");
+    }
+
+    // En yakın koloni ekranda değilse, ekranın kenarında yönünü gösteren işaret çıkar.
+    void HedefiGoster()
+    {
+        Mikrop yakin = null;
+        float enAz = float.MaxValue;
+        foreach (Mikrop m in mikroplar)
+        {
+            if (m == null || m.Eriyor) continue;
+            float uzaklik = (m.transform.position - arac.transform.position).sqrMagnitude;
+            if (uzaklik < enAz)
+            {
+                enAz = uzaklik;
+                yakin = m;
+            }
+        }
+        if (yakin == null)
+        {
+            arayuz.HedefIsareti(null);
+            return;
+        }
+
+        Vector3 g = kameraGozu.WorldToViewportPoint(yakin.transform.position + Vector3.up);
+        if (g.z > 0f && g.x > 0.04f && g.x < 0.96f && g.y > 0.04f && g.y < 0.96f)
+        {
+            arayuz.HedefIsareti(null);      // zaten görünüyor
+            return;
+        }
+        Vector2 yon = new Vector2(g.x - 0.5f, g.y - 0.5f) * (g.z < 0f ? -1f : 1f);
+        yon *= 0.44f / Mathf.Max(Mathf.Abs(yon.x), Mathf.Abs(yon.y), 0.001f);
+        arayuz.HedefIsareti(new Vector2(0.5f, 0.5f) + yon);
     }
 
     // Araç bir diş türüne ilk kez yaklaşınca profesör o dişi anlatır.
@@ -388,9 +476,14 @@ public class AgizBolumu : MonoBehaviour
         }
 
         var dalga = TukurukDalgasi.Olustur(arac, tukuruk, xMerkez, yari, 7f, 12f, ArkaZ - 1f);
+        Ses.Cal(Ses.Tur.Dalga, 0.7f);
         dalga.carpti = () =>
         {
-            if (carpmaAnlatildi || durum != Durum.Oyun) return;
+            if (durum != Durum.Oyun) return;
+            dalgaCarpma++;
+            Ses.Cal(Ses.Tur.Carpma);
+            kamera.sarsinti = 0.2f;
+            if (carpmaAnlatildi) return;
             carpmaAnlatildi = true;
             arayuz.Telsiz("Dalga seni boğaza doğru sürükledi! Bir dahakinde dalganın boş tarafına kaç.", true);
         };
@@ -412,10 +505,13 @@ public class AgizBolumu : MonoBehaviour
     IEnumerator KartAkisi()
     {
         durum = Durum.Kart;
+        sure = Time.time - baslangicZamani;
+        arayuz.HedefIsareti(null);
         arayuz.Telsiz("Hepsini temizledin, aferin çırak! Bu dişler artık güvende.", true);
         yield return new WaitForSeconds(2.5f);
 
         arac.kontrolAcik = false;
+        Ses.Cal(Ses.Tur.Basari);
         arayuz.KartGoster("VÜCUT KARTI: AĞIZ",
             "•  Diş minesi vücudumuzun en sert maddesidir; kemikten bile serttir.\n\n" +
             "•  Tükürük bezlerimiz her gün yaklaşık 1 litre tükürük üretir.\n\n" +
@@ -431,6 +527,7 @@ public class AgizBolumu : MonoBehaviour
     {
         if (durum != Durum.Kart || !kartHazir) return;
         arayuz.KartGizle();
+        Ses.Cal(Ses.Tur.Tik);
         StartCoroutine(Yutkunma());
     }
 
@@ -442,6 +539,7 @@ public class AgizBolumu : MonoBehaviour
         yield return new WaitForSeconds(2f);
 
         // Ağzı boydan boya kaplayan dev dalga aracı boğaza sürükler.
+        Ses.Cal(Ses.Tur.Yutkunma);
         TukurukDalgasi.Olustur(arac, tukuruk, 0f, A - 1f, 15f, 13f, ArkaZ - 8f);
         arkaDuvar.enabled = false;
         var bogaz = new Vector3(0f, 0f, ArkaZ - 9f);
@@ -458,7 +556,13 @@ public class AgizBolumu : MonoBehaviour
         yield return arayuz.Karart(1.2f);
         arac.Durdur();
         durum = Durum.Bitti;
-        arayuz.OrtaYazi("BÖLÜM 1 TAMAMLANDI\n\nSıradaki durak: Yemek Borusu\n\n<size=34>Tekrar oynamak için R tuşuna bas</size>");
+
+        // Puan: dalgalara yakalanmadan ve hızlı bitirene 3 yıldız
+        int yildiz = dalgaCarpma == 0 && sure <= 100f ? 3 : dalgaCarpma <= 1 && sure <= 170f ? 2 : 1;
+        string yildizlar = new string('★', yildiz) + new string('☆', 3 - yildiz);
+        arayuz.OrtaYazi("BÖLÜM 1 TAMAMLANDI\n<color=#FFD040><size=90>" + yildizlar + "</size></color>\n" +
+            $"<size=36>Süre: {(int)sure / 60}:{(int)sure % 60:00}     Dalgaya yakalanma: {dalgaCarpma}</size>\n\n" +
+            "Sıradaki durak: Yemek Borusu\n<size=34>Tekrar oynamak için R tuşuna bas</size>");
     }
 
     // Kamerayı çenenin içinde tutar; diş etlerinin arkasına geçip görüşü kapatmasın.

@@ -11,6 +11,7 @@ public class Arayuz : MonoBehaviour
     Text sayac, telsizMetin, kartBaslik, kartGovde, kartAlt, ortaYazi;
     GameObject telsizKutu, kart;
     Image karartma;
+    RectTransform hedefIsareti;
 
     readonly Queue<string> kuyruk = new Queue<string>();
     Coroutine akis;
@@ -49,9 +50,9 @@ public class Arayuz : MonoBehaviour
 
         // Sağ üst: kontrol ipucu
         var ipucuPanel = Panel("Ipucu", transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
-            new Vector2(-30f, -30f), new Vector2(600f, 84f), panelRengi);
+            new Vector2(-30f, -30f), new Vector2(680f, 84f), panelRengi);
         Dolduran("Metin", ipucuPanel.transform, 26, TextAnchor.MiddleCenter, new Color(0.85f, 0.92f, 1f), 10f)
-            .text = "WASD / Ok tuşları: Sür     BOŞLUK: Köpük at";
+            .text = "WASD / Oklar: Sür    BOŞLUK: Köpük    ESC: Duraklat";
 
         // Alt orta: telsiz kutusu
         var telsizPanel = Panel("Telsiz", transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
@@ -82,6 +83,13 @@ public class Arayuz : MonoBehaviour
             new Vector2(0f, 24f), new Vector2(-60f, 50f), 28, TextAnchor.MiddleCenter, new Color(0.45f, 0.35f, 0.3f));
         kart.SetActive(false);
 
+        // Ekran dışında kalan en yakın mikrobun yönünü gösteren işaret
+        var isaret = Panel("HedefIsareti", transform, Orta, Orta, Orta, Vector2.zero, new Vector2(30f, 30f),
+            new Color(0.8f, 1f, 0.35f, 0.9f));
+        hedefIsareti = (RectTransform)isaret.transform;
+        hedefIsareti.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        isaret.gameObject.SetActive(false);
+
         // En üstte: karartma ve bölüm sonu yazısı
         karartma = Panel("Karartma", transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, Vector2.zero,
             new Color(0f, 0f, 0f, 0f));
@@ -96,6 +104,30 @@ public class Arayuz : MonoBehaviour
     public void Sayac(int temizlenen, int toplam)
     {
         sayac.text = $"Mikrop: {temizlenen} / {toplam}";
+        if (temizlenen > 0) StartCoroutine(SayacVurgusu());
+    }
+
+    IEnumerator SayacVurgusu()
+    {
+        var panel = sayac.transform.parent;
+        for (float t = 0f; t < 1f; t += Time.deltaTime / 0.3f)
+        {
+            panel.localScale = Vector3.one * (1f + 0.28f * Mathf.Sin(Mathf.PI * t));
+            yield return null;
+        }
+        panel.localScale = Vector3.one;
+    }
+
+    // Ekranı kısmen karartır (başlangıç ve duraklatma ekranları). 0 = açık.
+    public void Perde(float alfa) => karartma.color = new Color(0f, 0f, 0f, alfa);
+
+    // Hedef işaretini ekran oranı (0..1) cinsinden bir noktaya koyar; null ise gizler.
+    public void HedefIsareti(Vector2? ekranOrani)
+    {
+        hedefIsareti.gameObject.SetActive(ekranOrani.HasValue);
+        if (!ekranOrani.HasValue) return;
+        hedefIsareti.anchorMin = hedefIsareti.anchorMax = ekranOrani.Value;
+        hedefIsareti.localScale = Vector3.one * (1f + 0.25f * Mathf.Sin(Time.unscaledTime * 6f));
     }
 
     // Profesörün telsiz mesajı. Öncelikli mesaj, bekleyenleri silip hemen gösterilir.
@@ -143,6 +175,7 @@ public class Arayuz : MonoBehaviour
         while (kuyruk.Count > 0)
         {
             string mesaj = kuyruk.Dequeue();
+            Ses.Cal(Ses.Tur.Telsiz, 0.6f);
             for (float harf = 0f; harf < mesaj.Length; harf += Time.deltaTime * 45f)
             {
                 telsizMetin.text = mesaj.Substring(0, (int)harf);

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Çırağın mini aracı: WASD / ok tuşları ile sürülür, Boşluk ile temizleme köpüğü atar.
+// Çırağın mini aracı: WASD / ok tuşları (ya da oyun kolu) ile sürülür, Boşluk ile temizleme köpüğü atar.
 [RequireComponent(typeof(Rigidbody))]
 public class AracKontrol : MonoBehaviour
 {
@@ -94,15 +94,35 @@ public class AracKontrol : MonoBehaviour
         donusGirdi = 0f;
         atesSayaci -= Time.deltaTime;
 
+        Ses.Motor(kontrolAcik ? Mathf.Abs(mevcutHiz) / hiz : 0f);
+        if (!kontrolAcik) return;
+
+        bool ates = false;
         var kb = Keyboard.current;
-        if (!kontrolAcik || kb == null) return;
+        if (kb != null)
+        {
+            if (kb.wKey.isPressed || kb.upArrowKey.isPressed) ileriGirdi += 1f;
+            if (kb.sKey.isPressed || kb.downArrowKey.isPressed) ileriGirdi -= 1f;
+            if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) donusGirdi += 1f;
+            if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) donusGirdi -= 1f;
+            ates |= kb.spaceKey.isPressed;
+        }
 
-        if (kb.wKey.isPressed || kb.upArrowKey.isPressed) ileriGirdi += 1f;
-        if (kb.sKey.isPressed || kb.downArrowKey.isPressed) ileriGirdi -= 1f;
-        if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) donusGirdi += 1f;
-        if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) donusGirdi -= 1f;
+        var kol = Gamepad.current;
+        if (kol != null)
+        {
+            Vector2 cubuk = kol.leftStick.ReadValue();
+            if (cubuk.magnitude > 0.2f)
+            {
+                ileriGirdi += cubuk.y;
+                donusGirdi += cubuk.x;
+            }
+            ates |= kol.buttonSouth.isPressed || kol.rightTrigger.isPressed;
+        }
+        ileriGirdi = Mathf.Clamp(ileriGirdi, -1f, 1f);
+        donusGirdi = Mathf.Clamp(donusGirdi, -1f, 1f);
 
-        if (kb.spaceKey.isPressed && atesSayaci <= 0f)
+        if (ates && atesSayaci <= 0f)
         {
             atesSayaci = atesAraligi;
             KopukAt();
@@ -142,5 +162,6 @@ public class AracKontrol : MonoBehaviour
         Vector3 cikis = transform.position + Vector3.up * 0.6f + transform.forward * 1.7f;
         Vector3 v = transform.forward * (16f + Mathf.Max(0f, mevcutHiz));
         Kopuk.At(cikis, v, rb, kopukMalzemesi);
+        Ses.Cal(Ses.Tur.Kopuk, 0.5f, Random.Range(0.9f, 1.15f));
     }
 }

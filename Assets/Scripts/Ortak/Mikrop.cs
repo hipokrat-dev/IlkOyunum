@@ -11,6 +11,7 @@ public class Mikrop : MonoBehaviour
 
     public bool Eriyor { get; private set; }
 
+    Light isaret;
     Vector3 merkez, ilkOlcek;
     float faz;
 
@@ -19,7 +20,19 @@ public class Mikrop : MonoBehaviour
         var g = Sekil.MeshParca(koloni, "Mikrop", null, konum, Vector3.one * boyut, malzeme,
             Quaternion.Euler(0f, UnityEngine.Random.value * 360f, 0f));
         g.AddComponent<SphereCollider>().radius = 1.4f;   // koloni ölçeğiyle birlikte küçülür
-        return g.AddComponent<Mikrop>();
+
+        // Karanlıkta koloninin yerini belli eden, nabız gibi atan soluk ışık
+        var isik = new GameObject("Isaret").AddComponent<Light>();
+        isik.transform.SetParent(g.transform, false);
+        isik.transform.localPosition = new Vector3(0f, 2.2f, 0f);
+        isik.type = LightType.Point;
+        isik.color = new Color(0.75f, 1f, 0.35f);
+        isik.range = 4.5f;
+        isik.shadows = LightShadows.None;
+
+        var mikrop = g.AddComponent<Mikrop>();
+        mikrop.isaret = isik;
+        return mikrop;
     }
 
     void Start()
@@ -37,6 +50,7 @@ public class Mikrop : MonoBehaviour
         transform.position = merkez + new Vector3(Mathf.Sin(z * 0.6f) * 0.05f, Mathf.Sin(z) * 0.04f, Mathf.Cos(z * 0.5f) * 0.05f);
         float nabiz = 1f + Mathf.Sin(z * 1.7f) * 0.05f;
         transform.localScale = new Vector3(ilkOlcek.x * nabiz, ilkOlcek.y / nabiz, ilkOlcek.z * nabiz);
+        if (isaret != null) isaret.intensity = 1.6f + 0.9f * Mathf.Sin(z * 2.2f);
     }
 
     public void Temizle()
@@ -51,6 +65,7 @@ public class Mikrop : MonoBehaviour
     IEnumerator Eri()
     {
         Baloncuk.Sac(transform.position, Color.white, 12, 0.4f);
+        Ses.Cal(Ses.Tur.Erime, 0.8f, UnityEngine.Random.Range(0.92f, 1.1f));
         Vector3 bas = transform.localScale;
         Vector3 lekeBas = leke != null ? leke.transform.localScale : Vector3.zero;
 
@@ -58,6 +73,7 @@ public class Mikrop : MonoBehaviour
         {
             transform.localScale = bas * (1f - t);
             if (leke != null) leke.transform.localScale = lekeBas * (1f - t);
+            if (isaret != null) isaret.intensity = 4f * (1f - t);
             yield return null;
         }
 
