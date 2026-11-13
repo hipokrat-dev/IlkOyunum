@@ -31,6 +31,7 @@ public abstract class BolumTemeli : MonoBehaviour
     protected abstract string SonrakiDurak { get; }
     protected virtual string SonrakiSahne => null;        // derleme listesindeki sahne adı; yoksa null
     protected virtual bool OrtamSesi => true;             // arka planda kalp atışı çalsın mı
+    protected virtual bool Puanli => true;                // false: gezinti bölümü, yıldız/istatistik yok
     protected abstract string KartBasligi { get; }
     protected abstract string KartMetni { get; }
 
@@ -58,7 +59,7 @@ public abstract class BolumTemeli : MonoBehaviour
 
         arac.kontrolAcik = false;
         arayuz.Perde(0.55f);
-        int enIyi = EnIyiYildiz(BolumNo);
+        int enIyi = Puanli ? EnIyiYildiz(BolumNo) : 0;
         string rekor = enIyi > 0 ? "\n<color=#FFD040><size=50>" + Yildizlar(enIyi) + "</size></color>" : "";
         arayuz.OrtaYazi($"VÜCUT YOLCULUĞU\n<size=44>Bölüm {BolumNo}: {BolumAdi}</size>{rekor}\n\n" +
                         "<size=34>Başlamak için BOŞLUK tuşuna bas</size>");
@@ -176,7 +177,7 @@ public abstract class BolumTemeli : MonoBehaviour
         durum = Durum.Bitti;
 
         int yildiz = Mathf.Clamp(Yildiz(), 1, 3);
-        if (yildiz > EnIyiYildiz(BolumNo))
+        if (Puanli && yildiz > EnIyiYildiz(BolumNo))
         {
             PlayerPrefs.SetInt("yildiz_" + BolumNo, yildiz);
             PlayerPrefs.Save();
@@ -185,8 +186,10 @@ public abstract class BolumTemeli : MonoBehaviour
         string devam = SonrakiVar
             ? "Devam etmek için BOŞLUK   •   Tekrar oynamak için R"
             : "Tekrar oynamak için R tuşuna bas";
-        arayuz.OrtaYazi($"BÖLÜM {BolumNo} TAMAMLANDI\n<color=#FFD040><size=90>{Yildizlar(yildiz)}</size></color>\n" +
-                        $"<size=36>{SonucSatiri()}</size>\n\nSıradaki durak: {SonrakiDurak}\n<size=34>{devam}</size>");
+        string puan = Puanli
+            ? $"<color=#FFD040><size=90>{Yildizlar(yildiz)}</size></color>\n<size=36>{SonucSatiri()}</size>\n"
+            : "";
+        arayuz.OrtaYazi($"BÖLÜM {BolumNo} TAMAMLANDI\n{puan}\nSıradaki durak: {SonrakiDurak}\n<size=34>{devam}</size>");
     }
 
     // ---------- Yardımcılar ----------

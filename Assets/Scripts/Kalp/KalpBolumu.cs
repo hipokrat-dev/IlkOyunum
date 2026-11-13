@@ -61,6 +61,7 @@ public class KalpBolumu : BolumTemeli
     protected override int BolumNo => 4;
     protected override string BolumAdi => "Kan Damarları ve Kalp";
     protected override string SonrakiDurak => "Akciğer";
+    protected override string SonrakiSahne => "Akciger";
     protected override bool OrtamSesi => false;      // bu bölümde kalp atışını bölümün kendisi çalar
     protected override string KartBasligi => "VÜCUT KARTI: KALP VE KAN";
     protected override string KartMetni =>
@@ -131,11 +132,7 @@ public class KalpBolumu : BolumTemeli
     void HucreleriKur()
     {
         // Alyuvar: iki yüzü çukur disk. Toplardamar kanı oksijeni az olduğu için koyu kırmızı.
-        var alyuvar = Sekil.SuperElips(1f, 1f, 12, p =>
-        {
-            float d = p.x * p.x + p.z * p.z;
-            return new Vector3(p.x, p.y * 0.3f * (1f - 0.72f * Mathf.Exp(-d / 0.2f)), p.z);
-        });
+        var alyuvar = Sekil.Alyuvar();
         var malzeme = Sekil.Malzeme(new Color(0.5f, 0.05f, 0.07f), 0.7f);
         for (int i = 0; i < HucreAdet; i++)
         {

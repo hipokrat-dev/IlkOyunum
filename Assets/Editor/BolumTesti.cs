@@ -23,6 +23,7 @@ static class BolumTesti
     static double sonraki, baslangic, asamaBasi;
     static Keyboard klavye;
     static float ilkZ, ilkAci;
+    static int cekilen;
     static bool araGoruntu;
 
     static BolumTesti()
@@ -34,6 +35,7 @@ static class BolumTesti
     public static void Mide() => Calistir("YemekBorusuMide");
     public static void Bagirsak() => Calistir("Bagirsak");
     public static void Kalp() => Calistir("KanKalp");
+    public static void Akciger() => Calistir("Akciger");
 
     static void Calistir(string sahne)
     {
@@ -78,6 +80,7 @@ static class BolumTesti
         if (bolum == "Agiz") AgizAdimi(t);
         else if (bolum == "Bagirsak") BagirsakAdimi(t);
         else if (bolum == "KanKalp") KalpAdimi(t);
+        else if (bolum == "Akciger") AkcigerAdimi(t);
         else MideAdimi(t);
         if (asama != onceki) { asamaBasi = t; araGoruntu = false; }
     }
@@ -261,6 +264,34 @@ static class BolumTesti
             case 7: Tus(); Sonra(8, t, 8); break;
             case 8:
                 Cek("kalp_6_bitis");
+                Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1, $"durum={b.DurumAdi} hata={hata} sure={t - baslangic:0}");
+                break;
+        }
+    }
+
+    // ---------------------------------------------------------------- Bölüm 5 (gezinti)
+
+    static void AkcigerAdimi(double t)
+    {
+        var b = BolumTemeli.Ornek;
+        switch (asama)
+        {
+            case 0: Cek("akciger_0_baslik"); Sonra(0.5, t, 1); break;
+            case 1: Tus(Key.Space); Sonra(0.3, t, 2); break;
+            case 2: Tus(); Sonra(0.1, t, 3); break;
+            case 3:
+                // Oynanış yok: yalnızca izle, yol boyunca görüntü al
+                double gecen = t - asamaBasi;
+                foreach (int an in new[] { 3, 9, 15, 21, 27 })
+                {
+                    if (gecen > an && gecen < an + 0.25 && cekilen < an) { cekilen = an; Cek("akciger_" + an + "sn"); }
+                }
+                if (b.DurumAdi == "Kart") Sonra(5, t, 4); else sonraki = t + 0.2;
+                break;
+            case 4: Cek("akciger_kart"); Tus(Key.Space); Sonra(0.3, t, 5); break;
+            case 5: Tus(); Sonra(8, t, 6); break;
+            case 6:
+                Cek("akciger_bitis");
                 Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1, $"durum={b.DurumAdi} hata={hata} sure={t - baslangic:0}");
                 break;
         }

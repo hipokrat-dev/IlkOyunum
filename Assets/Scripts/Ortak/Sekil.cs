@@ -164,6 +164,16 @@ public static class Sekil
         return MeshYap(noktalar, uv, ucgenler);
     }
 
+    // Alyuvar: iki yüzü çukur disk.
+    public static Mesh Alyuvar()
+    {
+        return SuperElips(1f, 1f, 12, p =>
+        {
+            float d = p.x * p.x + p.z * p.z;
+            return new Vector3(p.x, p.y * 0.3f * (1f - 0.72f * Mathf.Exp(-d / 0.2f)), p.z);
+        });
+    }
+
     // Z ekseni etrafında simit: R ana yarıçap, r kesit yarıçapı.
     public static Mesh Halka(float R, float r, int dilim, int kesit)
     {

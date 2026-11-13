@@ -17,8 +17,13 @@ düz metin olarak değil, profesörün telsiz konuşmalarıyla oyunun içinde ve
 | 2 | Yemek borusu + mide | Kayarak iniş (koşu), midede asit havuzlarından kaçış | Yutma, peristaltik hareket, mide asidi |
 | 3 | Bağırsak | Kıvrımlı tünellerde yol bulma, iyi bakterilere yardım / kötülerle savaş | Emilim, villuslar, faydalı bakteriler |
 | 4 | Kan damarları + kalp | Kan akışıyla ilerleme, kalp ritmine göre geçiş | Kan hücreleri, kalp odacıkları |
-| 5 | Akciğer | Alveollerde oksijen toplama, nefes ritmine uyma | Alveol, O2/CO2 değişimi |
-| 6 | Beyin (final) | Sinir sinyallerini doğru yere ulaştırma, bulmaca | Nöronlar, beyin bölgeleri |
+| 5 | Akciğer (gezinti) | Oynanmaz: hiper gerçekçi, kısa bir sinematik gezinti; alveoller izlenip tanınır | Alveol, O2/CO2 değişimi |
+| 6 | Böbrek | Süzülme ve geri emilim: yararlı maddeleri geri kazan, atıklardan kaçın | Nefron, süzme, idrar oluşumu |
+| 7 | Mesane ve çıkış (final) | Mesanede çıkışı tıkayan kristalleri temizle, idrarla vücuttan çık | Mesane, idrar yolu |
+
+Rota (2026-11-13'te kullanıcı kararıyla değişti): ağız → yemek borusu/mide → bağırsak → kan/kalp → akciğer
+(yalnızca gezinti) → böbrek → mesane → vücuttan çıkış. Eski plandaki oynanabilir Akciğer ve Beyin (final)
+bölümleri rotadan çıkarıldı.
 
 Her bölüm sonunda bir **Vücut Kartı** açılır (o organla ilgili 3 ilginç bilgi); kartlar koleksiyon oluşturur.
 

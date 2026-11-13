@@ -130,28 +130,6 @@ def mine_malzemesi(ad, H):
     return m
 
 
-def simit_koordinati(agac):
-    """UV'yi 4B simit yüzeyine sarar: bu koordinatla örneklenen her doku kusursuz döşenir."""
-    koord = dugum(agac, "ShaderNodeTexCoord")
-    ayir = dugum(agac, "ShaderNodeSeparateXYZ")
-    bagla(agac, koord.outputs["UV"], ayir.inputs[0])
-    au = matematik(agac, "MULTIPLY", ayir.outputs["X"], 2 * math.pi)
-    av = matematik(agac, "MULTIPLY", ayir.outputs["Y"], 2 * math.pi)
-    birles = dugum(agac, "ShaderNodeCombineXYZ")
-    bagla(agac, matematik(agac, "COSINE", au), birles.inputs[0])
-    bagla(agac, matematik(agac, "SINE", au), birles.inputs[1])
-    bagla(agac, matematik(agac, "COSINE", av), birles.inputs[2])
-    return birles.outputs[0], matematik(agac, "SINE", av)
-
-
-def doku4(agac, tur, vektor, w, olcek, **ozellik):
-    n = dugum(agac, tur, **ozellik)
-    bagla(agac, vektor, n.inputs["Vector"])
-    bagla(agac, w, n.inputs["W"])
-    n.inputs["Scale"].default_value = olcek
-    return n
-
-
 def dil_malzemesi():
     m, agac, bsdf = yeni_malzeme("Dil")
     v, w = simit_koordinati(agac)
@@ -213,17 +191,6 @@ def mukoza_malzemesi():
     bagla(agac, yukseklik, kabart.inputs["Height"])
     bagla(agac, kabart.outputs[0], bsdf.inputs["Normal"])
     return m
-
-
-# ----------------------------------------------------------------- Doku pişirme
-
-def doseme_pisir(ad, malzeme):
-    bpy.ops.mesh.primitive_plane_add(size=2)
-    duzlem = bpy.context.active_object
-    duzlem.data.materials.append(malzeme)
-    pisir(duzlem, ad + "_albedo", "DIFFUSE", kenar=0)
-    pisir(duzlem, ad + "_normal", "NORMAL", kenar=0)
-    bpy.data.objects.remove(duzlem)
 
 
 # ----------------------------------------------------------------- Diş eti
