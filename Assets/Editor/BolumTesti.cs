@@ -9,6 +9,7 @@ using UnityEngine.InputSystem.LowLevel;
 // Bölümlerin otomatik oynanış testi. Komut satırından çalıştırılır:
 //   Unity -batchmode -projectPath . -executeMethod BolumTesti.Agiz
 //   Unity -batchmode -projectPath . -executeMethod BolumTesti.Mide
+//   Unity -batchmode -projectPath . -executeMethod BolumTesti.Bagirsak
 // Bölümü sanal bir klavyeyle oynar, bölüm sonuna ulaşıldığını doğrular ve her aşamada
 // VY_CIKTI klasörüne (yoksa Temp/BolumTesti) ekran görüntüsü kaydeder.
 [InitializeOnLoad]
@@ -30,6 +31,7 @@ static class BolumTesti
 
     public static void Agiz() => Calistir("Agiz");
     public static void Mide() => Calistir("YemekBorusuMide");
+    public static void Bagirsak() => Calistir("Bagirsak");
 
     static void Calistir(string sahne)
     {
@@ -69,7 +71,9 @@ static class BolumTesti
         }
 
         int onceki = asama;
-        if (bolum == "Agiz") AgizAdimi(t); else MideAdimi(t);
+        if (bolum == "Agiz") AgizAdimi(t);
+        else if (bolum == "Bagirsak") BagirsakAdimi(t);
+        else MideAdimi(t);
         if (asama != onceki) { asamaBasi = t; araGoruntu = false; }
     }
 
@@ -158,6 +162,53 @@ static class BolumTesti
             case 9:
                 Cek("mide_6_bitis");
                 Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1, $"durum={b.DurumAdi} hata={hata} sure={t - baslangic:0}");
+                break;
+        }
+    }
+
+    // ---------------------------------------------------------------- Bölüm 3
+
+    static void BagirsakAdimi(double t)
+    {
+        var b = BagirsakBolumu.Ornek;
+        switch (asama)
+        {
+            case 0: Cek("bagirsak_0_baslik"); Sonra(0.5, t, 1); break;
+            case 1: Tus(Key.Space); Sonra(0.3, t, 2); break;
+            case 2:
+                Tus();
+                if (b.DurumAdi != "Oyun") Debug.LogError("GIRDI: BOŞLUK oyunu başlatmadı");
+                Sonra(1.5, t, 3); break;
+            case 3: Cek("bagirsak_1_tunel"); Sonra(0.1, t, 4); break;
+            case 4:
+                // Yolu izleyerek sür. Kuşatılmış bir koloniye gelince dur, en yakın saldırgana
+                // dönüp nişan alınca köpük at (dostları vurmamak için hizalıyken ateş et).
+                if (b.DurumAdi == "Kart") { Tus(); Sonra(5, t, 5); break; }
+                var arac = GameObject.Find("Arac").transform;
+                bool savas = b.YakinSaldirgan(out Vector3 dusman);
+                Vector3 yon = (savas ? dusman : b.IleridekiNokta()) - arac.position;
+                yon.y = 0f;
+                float aci = Vector3.SignedAngle(arac.forward, yon, Vector3.up);
+                var tuslar = new System.Collections.Generic.List<Key>();
+                if (savas)
+                {
+                    if (Mathf.Abs(aci) < 5f) tuslar.Add(Key.Space);
+                    if (yon.magnitude > 9f && Mathf.Abs(aci) < 40f) tuslar.Add(Key.W);
+                }
+                else if (Mathf.Abs(aci) < 75f) tuslar.Add(Key.W);
+                if (aci > 3f) tuslar.Add(Key.D); else if (aci < -3f) tuslar.Add(Key.A);
+                Tus(tuslar.ToArray());
+                double gecen = t - asamaBasi;
+                if (!araGoruntu && gecen > 5) { araGoruntu = true; Cek("bagirsak_2_kusatma"); }
+                if (gecen > 40 && gecen < 40.2) Cek("bagirsak_3_yol");
+                sonraki = t + 0.03;
+                break;
+            case 5: Cek("bagirsak_4_kart"); Tus(Key.Space); Sonra(0.3, t, 6); break;
+            case 6: Tus(); Sonra(8, t, 7); break;
+            case 7:
+                Cek("bagirsak_5_bitis");
+                Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1,
+                    $"durum={b.DurumAdi} hata={hata} kurtarilan={b.Kurtarilan} sure={t - baslangic:0}");
                 break;
         }
     }

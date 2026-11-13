@@ -186,7 +186,8 @@ public static class Sekil
         }, uvU, uvV);
     }
 
-    static Mesh Parametrik(int nu, int nv, bool icYuz, Func<float, float, Vector3> nokta, float uvU, float uvV)
+    // İki parametreli (0..1, 0..1) bir fonksiyondan yüzey üretir. icYuz: yüzeye iç tarafından bakılacaksa true.
+    public static Mesh Parametrik(int nu, int nv, bool icYuz, Func<float, float, Vector3> nokta, float uvU, float uvV)
     {
         var noktalar = new Vector3[(nu + 1) * (nv + 1)];
         var uv = new Vector2[noktalar.Length];

@@ -55,4 +55,11 @@ Her bölüm sonunda bir **Vücut Kartı** açılır (o organla ilgili 3 ilginç 
 - Kod: `Assets/Scripts/Mide`. Tüm bölümlerin ortak akışı `Assets/Scripts/Ortak/BolumTemeli.cs` içinde.
 - Lokmalar, asit gölleri ve mide duvarları şimdilik kodla üretilen şekiller; Blender modeli yok.
 
+## Bölüm 3 — Bağırsak (oynanabilir)
+- Kıvrıla kıvrıla ilerleyen, duvarları salınan villuslarla kaplı tünel.
+- Yol boyunca 5 dost (mavi) bakteri kolonisi; araç yaklaşınca kırmızı zararlı bakteriler koloniyi kuşatır ve
+  koloninin sağlığı azalır. Köpükle kırmızılar temizlenirse koloni kurtulur; köpük mavilere de zarar verir.
+- Hedef: tünelin sonundaki kapak. Yıldız: 5 koloni → 3, en az 3 koloni → 2.
+- Kod: `Assets/Scripts/Bagirsak`. Villuslar ve dost bakteriler kodla üretilen şekiller.
+
 Sıradaki bölümler aynı altyapı üzerine tek tek eklenir.

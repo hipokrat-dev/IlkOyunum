@@ -45,6 +45,7 @@ public class MideBolumu : BolumTemeli
     protected override int BolumNo => 2;
     protected override string BolumAdi => "Yemek Borusu ve Mide";
     protected override string SonrakiDurak => "Bağırsak";
+    protected override string SonrakiSahne => "Bagirsak";
     protected override string KartBasligi => "VÜCUT KARTI: MİDE";
     protected override string KartMetni =>
         "•  Yemek borusundaki kasılma dalgaları sayesinde baş aşağı dursan bile lokma mideye iner.\n\n" +
