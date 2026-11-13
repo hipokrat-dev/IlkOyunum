@@ -36,6 +36,7 @@ static class BolumTesti
     public static void Bagirsak() => Calistir("Bagirsak");
     public static void Kalp() => Calistir("KanKalp");
     public static void Akciger() => Calistir("Akciger");
+    public static void Bobrek() => Calistir("Bobrek");
 
     static void Calistir(string sahne)
     {
@@ -81,6 +82,7 @@ static class BolumTesti
         else if (bolum == "Bagirsak") BagirsakAdimi(t);
         else if (bolum == "KanKalp") KalpAdimi(t);
         else if (bolum == "Akciger") AkcigerAdimi(t);
+        else if (bolum == "Bobrek") BobrekAdimi(t);
         else MideAdimi(t);
         if (asama != onceki) { asamaBasi = t; araGoruntu = false; }
     }
@@ -293,6 +295,41 @@ static class BolumTesti
             case 6:
                 Cek("akciger_bitis");
                 Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1, $"durum={b.DurumAdi} hata={hata} sure={t - baslangic:0}");
+                break;
+        }
+    }
+
+    // ---------------------------------------------------------------- Bölüm 6
+
+    static void BobrekAdimi(double t)
+    {
+        var b = BobrekBolumu.Ornek;
+        switch (asama)
+        {
+            case 0: Cek("bobrek_0_baslik"); Sonra(0.5, t, 1); break;
+            case 1: Tus(Key.Space); Sonra(0.3, t, 2); break;
+            case 2: Tus(); Sonra(0.1, t, 3); break;
+            case 3:
+                // Sıradaki yararlı maddeye doğru süzül
+                if (b.DurumAdi == "Kart") { Tus(); Sonra(5, t, 4); break; }
+                Vector2 fark = b.SiradakiYararli() - b.AracYanal;
+                var tuslar = new System.Collections.Generic.List<Key>();
+                if (fark.x > 0.35f) tuslar.Add(Key.D); else if (fark.x < -0.35f) tuslar.Add(Key.A);
+                if (fark.y > 0.35f) tuslar.Add(Key.W); else if (fark.y < -0.35f) tuslar.Add(Key.S);
+                Tus(tuslar.ToArray());
+                double gecen = t - asamaBasi;
+                foreach (int an in new[] { 6, 10, 18 })
+                {
+                    if (gecen > an && gecen < an + 0.25 && cekilen < an) { cekilen = an; Cek("bobrek_" + an + "sn"); }
+                }
+                sonraki = t + 0.03;
+                break;
+            case 4: Cek("bobrek_kart"); Tus(Key.Space); Sonra(0.3, t, 5); break;
+            case 5: Tus(); Sonra(8, t, 6); break;
+            case 6:
+                Cek("bobrek_bitis");
+                Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1,
+                    $"durum={b.DurumAdi} hata={hata} geriKazanilan={b.GeriKazanilan} sure={t - baslangic:0}");
                 break;
         }
     }

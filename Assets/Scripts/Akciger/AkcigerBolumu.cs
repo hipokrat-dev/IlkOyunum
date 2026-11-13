@@ -38,6 +38,7 @@ public class AkcigerBolumu : BolumTemeli
     protected override int BolumNo => 5;
     protected override string BolumAdi => "Akciğer";
     protected override string SonrakiDurak => "Böbrek";
+    protected override string SonrakiSahne => "Bobrek";
     protected override bool Puanli => false;
     protected override string KartBasligi => "VÜCUT KARTI: AKCİĞER";
     protected override string KartMetni =>

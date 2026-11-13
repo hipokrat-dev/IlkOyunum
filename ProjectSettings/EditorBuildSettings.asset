@@ -21,6 +21,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Akciger.unity
     guid: 4f5ed03693d624673af8831dea7a507f
   - enabled: 1
+    path: Assets/Scenes/Bobrek.unity
+    guid: f533564e56a18441588fa1d4e1c177b9
+  - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   m_configObjects:

@@ -17,6 +17,7 @@ static class BolumSahneleri
         ("Bagirsak", typeof(BagirsakBolumu)),
         ("KanKalp", typeof(KalpBolumu)),
         ("Akciger", typeof(AkcigerBolumu)),
+        ("Bobrek", typeof(BobrekBolumu)),
     };
 
     public static string Yol(string ad) => $"Assets/Scenes/{ad}.unity";
@@ -35,6 +36,9 @@ static class BolumSahneleri
 
     [MenuItem("Vücut Yolculuğu/Bölüm 5 (Akciğer gezintisi) Oyna")]
     public static void AkcigerOyna() => Oyna("Akciger");
+
+    [MenuItem("Vücut Yolculuğu/Bölüm 6 (Böbrek) Oyna")]
+    public static void BobrekOyna() => Oyna("Bobrek");
 
     // Sahneyi açıp oyunu başlatır. Komut satırından da çağrılabilir (-executeMethod BolumSahneleri.AgizOyna).
     static void Oyna(string ad)
