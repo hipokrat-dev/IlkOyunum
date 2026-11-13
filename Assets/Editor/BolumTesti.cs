@@ -21,7 +21,7 @@ static class BolumTesti
     static int asama, hata;
     static double sonraki, baslangic, asamaBasi;
     static Keyboard klavye;
-    static float ilkZ;
+    static float ilkZ, ilkAci;
     static bool araGoruntu;
 
     static BolumTesti()
@@ -109,7 +109,18 @@ static class BolumTesti
                 Debug.Log($"GIRDI gidilen={gidilen:0.0} kopuk={kopuk}");
                 if (gidilen < 4f) Debug.LogError("GIRDI: W tuşu aracı ilerletmedi");
                 if (!kopuk) Debug.LogError("GIRDI: BOŞLUK köpük atmadı");
-                Sonra(1.5, t, 5); break;
+                Sonra(0.5, t, 20); break;
+
+            // Duvara çarpma: araç dönerek dişlere çarpar; tuşlar bırakılınca kendi kendine dönmemeli
+            case 20: Tus(Key.W, Key.D); Sonra(2.5, t, 21); break;
+            case 21: Tus(Key.W); Sonra(1.5, t, 22); break;
+            case 22: Tus(); Sonra(0.6, t, 23); break;
+            case 23: ilkAci = GameObject.Find("Arac").transform.eulerAngles.y; Sonra(0.5, t, 24); break;
+            case 24:
+                float donme = Mathf.Abs(Mathf.DeltaAngle(ilkAci, GameObject.Find("Arac").transform.eulerAngles.y)) / 0.5f;
+                Debug.Log($"DONME tuşsuz dönüş hızı={donme:0} derece/sn");
+                if (donme > 15f) Debug.LogError("DONME: araç tuşa basılmadan kendi kendine dönüyor");
+                Sonra(1.0, t, 5); break;
             case 5: Cek("agiz_1_oyun"); b.DalgaGonder(); Sonra(1.6, t, 6); break;
             case 6: Cek("agiz_2_dalga"); Sonra(0.3, t, 7); break;
             case 7:

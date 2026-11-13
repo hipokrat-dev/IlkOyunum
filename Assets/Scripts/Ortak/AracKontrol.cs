@@ -8,7 +8,7 @@ public class AracKontrol : MonoBehaviour
 {
     public float hiz = 9f;
     public float ivme = 30f;
-    public float donusHizi = 150f;
+    public float donusHizi = 115f;
     public float atesAraligi = 0.3f;
     public bool kontrolAcik = true;
 
@@ -21,7 +21,7 @@ public class AracKontrol : MonoBehaviour
     Rigidbody rb;
     Material kopukMalzemesi;
     Vector3 itki;
-    float ileriGirdi, donusGirdi, mevcutHiz, atesSayaci;
+    float ileriGirdi, donusGirdi, mevcutHiz, mevcutDonus, atesSayaci;
     bool durduruldu;
 
     public static AracKontrol Olustur(Vector3 konum)
@@ -82,7 +82,8 @@ public class AracKontrol : MonoBehaviour
 
         var govde = kok.AddComponent<Rigidbody>();
         govde.mass = 1f;
-        govde.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        // Dönüşü yalnızca direksiyon belirler; çarpışmalar aracı kendi etrafında döndüremez.
+        govde.constraints = RigidbodyConstraints.FreezeRotation;
         govde.interpolation = RigidbodyInterpolation.Interpolate;
         govde.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
@@ -119,7 +120,7 @@ public class AracKontrol : MonoBehaviour
         if (kol != null)
         {
             Vector2 cubuk = kol.leftStick.ReadValue();
-            if (cubuk.magnitude > 0.2f)
+            if (cubuk.magnitude > 0.3f)
             {
                 ileriGirdi += cubuk.y;
                 donusGirdi += cubuk.x;
@@ -141,7 +142,10 @@ public class AracKontrol : MonoBehaviour
         rb.isKinematic = rayModu || durduruldu;
         if (rb.isKinematic) return;
         float dt = Time.fixedDeltaTime;
-        rb.MoveRotation(rb.rotation * Quaternion.Euler(0f, donusGirdi * donusHizi * dt, 0f));
+        // Direksiyon yumuşak hızlanır: kısa dokunuşlar küçük düzeltme, basılı tutmak tam dönüş verir.
+        mevcutDonus = Mathf.MoveTowards(mevcutDonus, donusGirdi, 5f * dt);
+        rb.angularVelocity = Vector3.zero;
+        rb.MoveRotation(rb.rotation * Quaternion.Euler(0f, mevcutDonus * donusHizi * dt, 0f));
 
         mevcutHiz = Mathf.MoveTowards(mevcutHiz, ileriGirdi * hiz, ivme * dt);
         Vector3 v = transform.forward * mevcutHiz + itki;
@@ -172,6 +176,7 @@ public class AracKontrol : MonoBehaviour
     {
         itki = Vector3.zero;
         mevcutHiz = 0f;
+        mevcutDonus = 0f;
         transform.SetPositionAndRotation(konum, donus);
         rb.position = konum;
         rb.rotation = donus;
