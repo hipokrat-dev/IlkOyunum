@@ -46,4 +46,13 @@ Her bölüm sonunda bir **Vücut Kartı** açılır (o organla ilgili 3 ilginç 
   (motor, köpük, erime, dalga, telsiz, kalp atışı), kolonilerin üstünde soluk ışık, ekran dışındaki
   en yakın koloniye yön işareti, bölüm sonunda süre ve 1–3 yıldız (dalgaya yakalanmadan ve hızlı bitirene 3).
 
-Ağız bölümü bitip oynanabilir olunca diğer bölümler aynı altyapı üzerine tek tek eklenir.
+## Bölüm 2 — Yemek borusu ve mide (oynanabilir)
+- **Yemek borusu:** araç tüpte kendiliğinden kayar; A/D ile duvarda sağa sola kayıp lokma parçalarından
+  kaçılır ya da köpükle dağıtılır. Arkadan gelen kasılma dalgası (peristaltik hareket) aracı hızlandırır.
+- **Mide:** asit gölleri kalkanı eritir; köpük gölü birkaç saniyeliğine nötrler (antasit gibi) ve üstünden
+  geçilir. Mide kasılınca göller taşar. Kalkan biterse araç son güvenli noktaya döner. Hedef: mide çıkışı.
+- Yıldız: kalkanı hiç bitirmeden ve en çok 2 lokmaya çarparak bitirene 3 yıldız.
+- Kod: `Assets/Scripts/Mide`. Tüm bölümlerin ortak akışı `Assets/Scripts/Ortak/BolumTemeli.cs` içinde.
+- Lokmalar, asit gölleri ve mide duvarları şimdilik kodla üretilen şekiller; Blender modeli yok.
+
+Sıradaki bölümler aynı altyapı üzerine tek tek eklenir.
