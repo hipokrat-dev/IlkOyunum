@@ -397,7 +397,10 @@ static class BolumTesti
             case 1: Cek("menu_0"); Tus(Key.K); Sonra(0.4, t, 2); break;
             case 2: Tus(); Sonra(0.4, t, 3); break;
             case 3: Cek("menu_1_kartlar"); Tus(Key.Escape); Sonra(0.3, t, 4); break;
-            case 4: Tus(); Sonra(0.3, t, 5); break;
+            case 4: Tus(); Sonra(0.3, t, 40); break;
+            case 40: Tus(Key.B); Sonra(0.3, t, 41); break;
+            case 41: Tus(); Sonra(0.3, t, 42); break;
+            case 42: Cek("menu_2_bolumler"); Sonra(0.2, t, 5); break;
             case 5: Tus(Key.Digit3); Sonra(0.3, t, 6); break;
             case 6: Tus(); Sonra(2, t, 7); break;
             case 7:

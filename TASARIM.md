@@ -86,9 +86,23 @@ Her bölüm sonunda bir **Vücut Kartı** açılır (o organla ilgili 3 ilginç 
   Dikenli atıklara (kahverengi üre, mor zehir) dokunulmaz. Yıldız: yararlıların %75'i ve en çok 2 atık → 3.
 
 ## Bölüm 7 — Mesane ve çıkış (final, oynanabilir)
-- Mesane 85 saniyede idrarla dolar. Çıkışın önündeki ve çevredeki 7 idrar kristali köpükle eritilir
-  (her biri 3 vuruş). Hepsi eriyince ya da mesane dolunca çıkış açılır, araç idrarla vücuttan çıkar.
-- Final ekranı: "Yolculuk tamamlandı", puanlı altı bölümün toplam yıldızı (18 üzerinden), baştan başlama.
+- Araç idrar borusunun ağzından mesaneye düşer ve idrarın yüzeyinde yüzer (kaldırma kuvveti).
+- Kristaller ağır olduğu için dipte durur. DAL (SHIFT / ekrandaki DAL düğmesi) basılı tutulunca kapsül içine
+  sıvı alıp batar, bırakılınca yükselir. Dipteki 7 kristal köpükle eritilir (her biri 3 vuruş).
+- Mesane 110 saniyede dolar. Kristaller bitince ya da mesane dolunca çıkış açılır.
+- Çıkış animasyonu: kas halkası açılır, akıntı aracı çeker, araç idrar yolundan gün ışığına doğru hızlanır.
+- Final ekranı: "Yolculuk tamamlandı", puanlı altı bölümün toplam yıldızı (18 üzerinden).
 
-Oyunun bütün rotası oynanabilir durumda. Eksikler: ana menü/bölüm seçimi, Vücut Kartı koleksiyon ekranı,
-Unity dışında çalışan bağımsız oyun dosyası; 2–4, 6 ve 7. bölümlerde Blender modelleri.
+## Ana menü, kartlar, tablet ve seslendirme
+- **Ana menü** (`AnaMenu` sahnesi, oyunun ilk sahnesi): bölüm seçimi (kazanılan yıldızlarla) ve Vücut Kartı
+  koleksiyonu. İlerleme `PlayerPrefs`'te tutulur (yıldız, biten bölüm, toplanan kartlar).
+- **Tablet (Android):** ekranın sol yarısında dokunulan yerde beliren sürüş çubuğu; sağ yarının tamamı köpük.
+  Duraklat, DAL ve bölüm sonu düğmeleri ekranda. Arayüz her en-boy oranında ekranı doldurur, göstergeler
+  güvenli alana yerleşir. Paket: menüden *Vücut Yolculuğu → Derleme → Android Paketi (APK) Oluştur*.
+- **Seslendirme:** profesörün bütün cümleleri ElevenLabs'te "Yumi - Soothing Female Narrator" sesiyle
+  (Multilingual v2) üretildi; `Assets/Resources/Seslendirme/<anahtar>.mp3`. Oyun sesi telsiz efektinden geçirir.
+  Bir cümlenin metni değişirse anahtarı da değişir ve o cümle yeniden seslendirilmelidir:
+  `python3 Araclar/seslendirme/satirlari_cikar.py` eksikleri listeler, `bol.py` toplu kaydı cümlelere böler.
+
+Eksikler: 2–4, 6 ve 7. bölümlerde Blender modelleri (şimdilik kodla üretilen şekiller); seslendirmede
+klavye tuşlarının adı geçiyor (tablette ekran düğmeleri kullanılıyor).

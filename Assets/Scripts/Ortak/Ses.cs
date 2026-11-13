@@ -5,14 +5,15 @@ using UnityEngine;
 // Oyunun tüm sesleri. Ses dosyası kullanılmaz; her ses başlangıçta kodla üretilir.
 public class Ses : MonoBehaviour
 {
-    public enum Tur { Kopuk, Erime, Telsiz, Dalga, Carpma, Basari, Yutkunma, Tik }
+    public enum Tur { Kopuk, Erime, Telsiz, Dalga, Carpma, Basari, Yutkunma, Tik, TelsizKapanis }
 
     const int Hz = 44100;
     static Ses ornek;
 
     readonly Dictionary<Tur, AudioClip> klipler = new Dictionary<Tur, AudioClip>();
-    AudioSource tekSes, motor, ortam, konusma;
+    AudioSource tekSes, motor, ortam, konusma, parazit;
     float motorHedef;
+    bool konusuyordu;
 
     static Ses Ornek
     {
@@ -53,7 +54,9 @@ public class Ses : MonoBehaviour
 
     public static void KonusmayiKes()
     {
-        if (ornek != null) ornek.konusma.Stop();
+        if (ornek == null) return;
+        ornek.konusma.Stop();
+        ornek.konusuyordu = false;       // kesilen konuşmada kapanış cızırtısı çalmaz
     }
 
     // ---------- Kurulum ----------
@@ -63,7 +66,7 @@ public class Ses : MonoBehaviour
         tekSes = Kaynak(false, 1f);
         motor = Kaynak(true, 0f);
         ortam = Kaynak(true, 0.5f);
-        konusma = Kaynak(false, 1f);
+        TelsiziKur();
 
         var rastgele = new System.Random(7);
         Func<float> gurultu = () => (float)rastgele.NextDouble() * 2f - 1f;
@@ -153,8 +156,49 @@ public class Ses : MonoBehaviour
         });
     }
 
+    // Profesörün sesi telsizden gelir: dar bantlı ve hafif bozuk hoparlör sesi, arkada parazit.
+    // Süzgeçler aynı nesnedeki bütün ses kaynaklarını etkilediği için telsiz ayrı bir alt nesnede durur.
+    void TelsiziKur()
+    {
+        var telsiz = new GameObject("Telsiz");
+        telsiz.transform.SetParent(transform, false);
+
+        konusma = telsiz.AddComponent<AudioSource>();
+        konusma.playOnAwake = false;
+        konusma.spatialBlend = 0f;
+        konusma.volume = 1f;
+
+        var tiz = telsiz.AddComponent<AudioHighPassFilter>();       // boğuk alt sesleri kes
+        tiz.cutoffFrequency = 420f;
+        tiz.highpassResonanceQ = 1.2f;
+        var pes = telsiz.AddComponent<AudioLowPassFilter>();        // parlak üst sesleri kes
+        pes.cutoffFrequency = 3300f;
+        pes.lowpassResonanceQ = 1.3f;
+        telsiz.AddComponent<AudioDistortionFilter>().distortionLevel = 0.32f;
+
+        // Konuşma sürerken duyulan hat paraziti
+        var rastgele = new System.Random(11);
+        parazit = telsiz.AddComponent<AudioSource>();
+        parazit.playOnAwake = false;
+        parazit.spatialBlend = 0f;
+        parazit.loop = true;
+        parazit.volume = 0f;
+        parazit.clip = Uret(2f, t => ((float)rastgele.NextDouble() * 2f - 1f) * (0.35f + 0.25f * Mathf.Sin(2f * Mathf.PI * 3f * t)) *
+                                     Mathf.Clamp01(Mathf.Min(t, 2f - t) * 20f));
+        parazit.Play();
+
+        // Konuşma bitince: mandal bırakılırken duyulan kısa cızırtı
+        klipler[Tur.TelsizKapanis] = Uret(0.16f, t => ((float)rastgele.NextDouble() * 2f - 1f) * Mathf.Exp(-t * 22f) * 0.5f);
+    }
+
     void Update()
     {
+        // Parazit yalnızca konuşma sırasında duyulur
+        bool konusuyor = konusma.isPlaying;
+        parazit.volume = Mathf.MoveTowards(parazit.volume, konusuyor ? 0.09f : 0f, Time.unscaledDeltaTime * 0.6f);
+        if (konusuyordu && !konusuyor && !AudioListener.pause) Cal(Tur.TelsizKapanis, 0.5f);
+        konusuyordu = konusuyor;
+
         motor.volume = Mathf.MoveTowards(motor.volume, 0.05f + 0.16f * motorHedef, Time.unscaledDeltaTime * 0.6f);
         motor.pitch = Mathf.MoveTowards(motor.pitch, 0.8f + 0.7f * motorHedef, Time.unscaledDeltaTime * 1.5f);
     }
