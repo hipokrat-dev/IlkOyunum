@@ -75,4 +75,20 @@ Her bölüm sonunda bir **Vücut Kartı** açılır (o organla ilgili 3 ilginç 
 - Yıldız: akyuvara hiç yakalanmadan ve en çok 1 kapak kaçırarak bitirene 3 yıldız.
 - Kod: `Assets/Scripts/Kalp`.
 
-Sıradaki bölümler aynı altyapı üzerine tek tek eklenir.
+## Bölüm 5 — Akciğer gezintisi (oynanmaz)
+- Araç kan akışıyla alveollerin arasından geçer; oyuncu izler, profesör anlatır. Alveoller nefesle dolup
+  boşalır, alyuvarlar oksijenlenince koyu kırmızıdan parlak kırmızıya döner. Yıldız yok.
+- Alveol kümeleri ve dokusu Blender'da üretilir: `Araclar/blender/akciger_modelleri.py` → `Assets/Resources/Akciger`.
+
+## Bölüm 6 — Böbrek (oynanabilir)
+- Böbrek atardamarı → glomerulus (kılcal damar yumağı) → süzgeçten geçiş → nefron kanalı.
+- Kanalda yararlı maddelere (mavi su, sarı glikoz, beyaz tuz) dokunulur: kana geri döner (geri emilim).
+  Dikenli atıklara (kahverengi üre, mor zehir) dokunulmaz. Yıldız: yararlıların %75'i ve en çok 2 atık → 3.
+
+## Bölüm 7 — Mesane ve çıkış (final, oynanabilir)
+- Mesane 85 saniyede idrarla dolar. Çıkışın önündeki ve çevredeki 7 idrar kristali köpükle eritilir
+  (her biri 3 vuruş). Hepsi eriyince ya da mesane dolunca çıkış açılır, araç idrarla vücuttan çıkar.
+- Final ekranı: "Yolculuk tamamlandı", puanlı altı bölümün toplam yıldızı (18 üzerinden), baştan başlama.
+
+Oyunun bütün rotası oynanabilir durumda. Eksikler: ana menü/bölüm seçimi, Vücut Kartı koleksiyon ekranı,
+Unity dışında çalışan bağımsız oyun dosyası; 2–4, 6 ve 7. bölümlerde Blender modelleri.

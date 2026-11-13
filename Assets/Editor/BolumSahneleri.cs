@@ -18,6 +18,7 @@ static class BolumSahneleri
         ("KanKalp", typeof(KalpBolumu)),
         ("Akciger", typeof(AkcigerBolumu)),
         ("Bobrek", typeof(BobrekBolumu)),
+        ("Mesane", typeof(MesaneBolumu)),
     };
 
     public static string Yol(string ad) => $"Assets/Scenes/{ad}.unity";
@@ -40,6 +41,9 @@ static class BolumSahneleri
     [MenuItem("Vücut Yolculuğu/Bölüm 6 (Böbrek) Oyna")]
     public static void BobrekOyna() => Oyna("Bobrek");
 
+    [MenuItem("Vücut Yolculuğu/Bölüm 7 (Mesane ve Çıkış) Oyna")]
+    public static void MesaneOyna() => Oyna("Mesane");
+
     // Sahneyi açıp oyunu başlatır. Komut satırından da çağrılabilir (-executeMethod BolumSahneleri.AgizOyna).
     static void Oyna(string ad)
     {
@@ -50,6 +54,14 @@ static class BolumSahneleri
             EditorApplication.ExecuteMenuItem("Window/General/Game");
             EditorApplication.EnterPlaymode();
         };
+    }
+
+    [MenuItem("Vücut Yolculuğu/Yıldızları Sıfırla")]
+    public static void YildizlariSifirla()
+    {
+        for (int bolum = 1; bolum <= Bolumler.Length; bolum++) PlayerPrefs.DeleteKey("yildiz_" + bolum);
+        PlayerPrefs.Save();
+        Debug.Log("Kayıtlı yıldızlar sıfırlandı.");
     }
 
     [MenuItem("Vücut Yolculuğu/Eksik Sahneleri Oluştur")]

@@ -37,6 +37,7 @@ static class BolumTesti
     public static void Kalp() => Calistir("KanKalp");
     public static void Akciger() => Calistir("Akciger");
     public static void Bobrek() => Calistir("Bobrek");
+    public static void Mesane() => Calistir("Mesane");
 
     static void Calistir(string sahne)
     {
@@ -52,6 +53,7 @@ static class BolumTesti
         if (bagli) return;
         bagli = true;
         bolum = SessionState.GetString(Anahtar, "");
+        BolumTemeli.kayitKapali = true;
         baslangic = EditorApplication.timeSinceStartup;
         Application.logMessageReceived += (mesaj, iz, tur) =>
         {
@@ -83,6 +85,7 @@ static class BolumTesti
         else if (bolum == "KanKalp") KalpAdimi(t);
         else if (bolum == "Akciger") AkcigerAdimi(t);
         else if (bolum == "Bobrek") BobrekAdimi(t);
+        else if (bolum == "Mesane") MesaneAdimi(t);
         else MideAdimi(t);
         if (asama != onceki) { asamaBasi = t; araGoruntu = false; }
     }
@@ -330,6 +333,45 @@ static class BolumTesti
                 Cek("bobrek_bitis");
                 Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1,
                     $"durum={b.DurumAdi} hata={hata} geriKazanilan={b.GeriKazanilan} sure={t - baslangic:0}");
+                break;
+        }
+    }
+
+    // ---------------------------------------------------------------- Bölüm 7 (final)
+
+    static void MesaneAdimi(double t)
+    {
+        var b = MesaneBolumu.Ornek;
+        switch (asama)
+        {
+            case 0: Cek("mesane_0_baslik"); Sonra(0.5, t, 1); break;
+            case 1: Tus(Key.Space); Sonra(0.3, t, 2); break;
+            case 2: Tus(); Sonra(1.5, t, 3); break;
+            case 3: Cek("mesane_1_oyun"); Sonra(0.1, t, 4); break;
+            case 4:
+                // En yakın kristale git, nişan alınca köpük at
+                if (b.DurumAdi == "Kart") { Tus(); Sonra(5, t, 5); break; }
+                var arac = GameObject.Find("Arac").transform;
+                var tuslar = new System.Collections.Generic.List<Key>();
+                if (b.YakinKristal(out Vector3 hedef))
+                {
+                    Vector3 yon = hedef - arac.position;
+                    yon.y = 0f;
+                    float aci = Vector3.SignedAngle(arac.forward, yon, Vector3.up);
+                    if (Mathf.Abs(aci) < 6f) tuslar.Add(Key.Space);
+                    if (yon.magnitude > 7f && Mathf.Abs(aci) < 50f) tuslar.Add(Key.W);
+                    if (aci > 3f) tuslar.Add(Key.D); else if (aci < -3f) tuslar.Add(Key.A);
+                }
+                Tus(tuslar.ToArray());
+                if (!araGoruntu && t - asamaBasi > 9) { araGoruntu = true; Cek("mesane_2_kristal"); }
+                sonraki = t + 0.03;
+                break;
+            case 5: Cek("mesane_3_kart"); Tus(Key.Space); Sonra(0.3, t, 6); break;
+            case 6: Tus(); Sonra(9, t, 7); break;
+            case 7:
+                Cek("mesane_4_final");
+                Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1,
+                    $"durum={b.DurumAdi} hata={hata} kalanKristal={b.KalanKristal} sure={t - baslangic:0}");
                 break;
         }
     }
