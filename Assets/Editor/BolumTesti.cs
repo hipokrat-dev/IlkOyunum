@@ -10,6 +10,7 @@ using UnityEngine.InputSystem.LowLevel;
 //   Unity -batchmode -projectPath . -executeMethod BolumTesti.Agiz
 //   Unity -batchmode -projectPath . -executeMethod BolumTesti.Mide
 //   Unity -batchmode -projectPath . -executeMethod BolumTesti.Bagirsak
+//   Unity -batchmode -projectPath . -executeMethod BolumTesti.Kalp
 // Bölümü sanal bir klavyeyle oynar, bölüm sonuna ulaşıldığını doğrular ve her aşamada
 // VY_CIKTI klasörüne (yoksa Temp/BolumTesti) ekran görüntüsü kaydeder.
 [InitializeOnLoad]
@@ -32,6 +33,7 @@ static class BolumTesti
     public static void Agiz() => Calistir("Agiz");
     public static void Mide() => Calistir("YemekBorusuMide");
     public static void Bagirsak() => Calistir("Bagirsak");
+    public static void Kalp() => Calistir("KanKalp");
 
     static void Calistir(string sahne)
     {
@@ -50,6 +52,8 @@ static class BolumTesti
         baslangic = EditorApplication.timeSinceStartup;
         Application.logMessageReceived += (mesaj, iz, tur) =>
         {
+            // Editörün kendi arama dizini hataları oyunla ilgili değil; sayılmaz.
+            if (iz != null && iz.Contains("UnityEditor.Search")) return;
             if (tur == LogType.Error || tur == LogType.Exception || tur == LogType.Assert) hata++;
         };
         EditorApplication.update += Guncelle;
@@ -73,6 +77,7 @@ static class BolumTesti
         int onceki = asama;
         if (bolum == "Agiz") AgizAdimi(t);
         else if (bolum == "Bagirsak") BagirsakAdimi(t);
+        else if (bolum == "KanKalp") KalpAdimi(t);
         else MideAdimi(t);
         if (asama != onceki) { asamaBasi = t; araGoruntu = false; }
     }
@@ -220,6 +225,43 @@ static class BolumTesti
                 Cek("bagirsak_5_bitis");
                 Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1,
                     $"durum={b.DurumAdi} hata={hata} kurtarilan={b.Kurtarilan} sure={t - baslangic:0}");
+                break;
+        }
+    }
+
+    // ---------------------------------------------------------------- Bölüm 4
+
+    static void KalpAdimi(double t)
+    {
+        var b = KalpBolumu.Ornek;
+        switch (asama)
+        {
+            case 0: Cek("kalp_0_baslik"); Sonra(0.5, t, 1); break;
+            case 1: Tus(Key.Space); Sonra(0.3, t, 2); break;
+            case 2:
+                Tus();
+                if (b.DurumAdi != "Oyun") Debug.LogError("GIRDI: BOŞLUK oyunu başlatmadı");
+                Sonra(4, t, 3); break;
+            case 3: Cek("kalp_1_damar"); Tus(Key.D, Key.W); Sonra(0.8, t, 4); break;
+            case 4:
+                // Damar: köpük atarak akışla ilerle (akyuvarları sakinleştirir)
+                if (b.AsamaAdi != "Damar") { Tus(); Cek("kalp_3_kulakcik"); Sonra(0.5, t, 5); break; }
+                Tus(Key.Space);
+                if (!araGoruntu && t - asamaBasi > 12) { araGoruntu = true; Cek("kalp_2_akyuvar"); }
+                sonraki = t + 0.2;
+                break;
+            case 5:
+                // Kalp: sıradaki kapak açılır açılmaz BOŞLUK ile atıl
+                if (b.DurumAdi == "Kart") { Tus(); Sonra(5, t, 6); break; }
+                if (b.AsamaAdi == "Atardamar" && !araGoruntu) { araGoruntu = true; Cek("kalp_4_atardamar"); }
+                if (b.SiradakiKapakAcik) Tus(Key.Space); else Tus();
+                sonraki = t + 0.03;
+                break;
+            case 6: Cek("kalp_5_kart"); Tus(Key.Space); Sonra(0.3, t, 7); break;
+            case 7: Tus(); Sonra(8, t, 8); break;
+            case 8:
+                Cek("kalp_6_bitis");
+                Bitir(hata == 0 && b.DurumAdi == "Bitti" ? 0 : 1, $"durum={b.DurumAdi} hata={hata} sure={t - baslangic:0}");
                 break;
         }
     }

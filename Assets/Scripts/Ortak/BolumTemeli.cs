@@ -30,6 +30,7 @@ public abstract class BolumTemeli : MonoBehaviour
     protected abstract string BolumAdi { get; }
     protected abstract string SonrakiDurak { get; }
     protected virtual string SonrakiSahne => null;        // derleme listesindeki sahne adı; yoksa null
+    protected virtual bool OrtamSesi => true;             // arka planda kalp atışı çalsın mı
     protected abstract string KartBasligi { get; }
     protected abstract string KartMetni { get; }
 
@@ -78,7 +79,7 @@ public abstract class BolumTemeli : MonoBehaviour
         arayuz.Perde(0f);
         arayuz.OrtaYazi("");
         Ses.Cal(Ses.Tur.Tik);
-        Ses.OrtamBaslat();
+        if (OrtamSesi) Ses.OrtamBaslat();
         OyunBasladi();
     }
 

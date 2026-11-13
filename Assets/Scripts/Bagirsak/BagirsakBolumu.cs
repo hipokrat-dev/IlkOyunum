@@ -29,6 +29,7 @@ public class BagirsakBolumu : BolumTemeli
     protected override int BolumNo => 3;
     protected override string BolumAdi => "Bağırsak";
     protected override string SonrakiDurak => "Kan Damarları";
+    protected override string SonrakiSahne => "KanKalp";
     protected override string KartBasligi => "VÜCUT KARTI: BAĞIRSAK";
     protected override string KartMetni =>
         "•  İnce bağırsak yaklaşık 6-7 metre uzunluğundadır; karnımıza kıvrıla kıvrıla sığar.\n\n" +

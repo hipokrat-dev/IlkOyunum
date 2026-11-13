@@ -17,6 +17,9 @@ public class AracKontrol : MonoBehaviour
     public bool rayModu;
     public float rayHizi;
     public float DonusGirdi => donusGirdi;
+    public float IleriGirdi => ileriGirdi;
+    public bool AtesGirdi { get; private set; }     // köpük tuşu şu an basılı mı
+    public bool kopukAcik = true;                   // false: köpük tuşu köpük atmaz (bölüm başka işe kullanır)
 
     Rigidbody rb;
     Material kopukMalzemesi;
@@ -101,6 +104,7 @@ public class AracKontrol : MonoBehaviour
         ileriGirdi = 0f;
         donusGirdi = 0f;
         atesSayaci -= Time.deltaTime;
+        AtesGirdi = false;
 
         Ses.Motor(!kontrolAcik ? 0f : rayModu ? 1f : Mathf.Abs(mevcutHiz) / hiz);
         if (!kontrolAcik) return;
@@ -130,7 +134,8 @@ public class AracKontrol : MonoBehaviour
         ileriGirdi = Mathf.Clamp(ileriGirdi, -1f, 1f);
         donusGirdi = Mathf.Clamp(donusGirdi, -1f, 1f);
 
-        if (ates && atesSayaci <= 0f)
+        AtesGirdi = ates;
+        if (ates && kopukAcik && atesSayaci <= 0f)
         {
             atesSayaci = atesAraligi;
             KopukAt();

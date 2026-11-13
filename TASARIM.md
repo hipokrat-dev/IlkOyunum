@@ -62,4 +62,12 @@ Her bölüm sonunda bir **Vücut Kartı** açılır (o organla ilgili 3 ilginç 
 - Hedef: tünelin sonundaki kapak. Yıldız: 5 koloni → 3, en az 3 koloni → 2.
 - Kod: `Assets/Scripts/Bagirsak`. Villuslar ve dost bakteriler kodla üretilen şekiller.
 
+## Bölüm 4 — Kan damarları ve kalp (oynanabilir)
+- **Toplardamar:** kan akışı aracı kalbe taşır; WASD ile damarın içinde süzülünür. Alyuvarlar çarpınca
+  yavaşlatır. Akyuvarlar kapsülü mikrop sanıp yakalar; köpük değince kapsülü tanıyıp sakinleşirler.
+- **Kalp:** sağ kulakçık → sağ karıncık → akciğer atardamarı. Kapakçıklar kalp atışıyla açılıp kapanır
+  (açıkken yeşil, kapalıyken kırmızı ışık); kapak açıkken BOŞLUK ile atılıp geçilir, kapalıysa araç geri seker.
+- Yıldız: akyuvara hiç yakalanmadan ve en çok 1 kapak kaçırarak bitirene 3 yıldız.
+- Kod: `Assets/Scripts/Kalp`.
+
 Sıradaki bölümler aynı altyapı üzerine tek tek eklenir.

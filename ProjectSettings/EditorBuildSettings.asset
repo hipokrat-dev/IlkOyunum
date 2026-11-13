@@ -15,6 +15,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Bagirsak.unity
     guid: d9d3a33219e4a441e8d7897b0f27ab32
   - enabled: 1
+    path: Assets/Scenes/KanKalp.unity
+    guid: 32e28eeecd17c498eabfee4c00015bda
+  - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   m_configObjects:
