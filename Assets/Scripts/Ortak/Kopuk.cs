@@ -1,9 +1,19 @@
+using System;
 using UnityEngine;
 
-// Araçtan atılan temizleme köpüğü. Bir mikroba değerse onu eritir, başka bir şeye değerse patlar.
+// Temizleme köpüğünün etkilediği her şey (mikrop, lokma...) bunu uygular.
+public interface IKopukHedefi
+{
+    void KopukDegdi();
+}
+
+// Araçtan atılan temizleme köpüğü. Bir hedefe değerse onu etkiler, başka bir şeye değerse patlar.
 public class Kopuk : MonoBehaviour
 {
     static readonly Collider[] tampon = new Collider[8];
+
+    // Zemindeki hedefler (ör. asit gölleri) için: köpük bu noktanın üstündeyken bir şeye değdi mi?
+    public static Func<Vector3, bool> zeminKontrolu;
 
     Vector3 hiz;
     float omur = 0.9f;
@@ -28,8 +38,13 @@ public class Kopuk : MonoBehaviour
             var c = tampon[i];
             if (c.attachedRigidbody == sahip) continue;
 
-            var mikrop = c.GetComponentInParent<Mikrop>();
-            if (mikrop != null) mikrop.Temizle();
+            c.GetComponentInParent<IKopukHedefi>()?.KopukDegdi();
+            Patla();
+            return;
+        }
+
+        if (zeminKontrolu != null && zeminKontrolu(transform.position))
+        {
             Patla();
             return;
         }

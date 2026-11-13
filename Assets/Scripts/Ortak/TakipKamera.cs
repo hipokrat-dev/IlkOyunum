@@ -10,6 +10,7 @@ public class TakipKamera : MonoBehaviour
     public Vector3 ofset = new Vector3(0f, 6.5f, -8f);
     public float yumusaklik = 5f;
     public float sarsinti;                    // > 0 ise kamera titrer, kendiliğinden söner
+    public bool yerelTakip;                   // true: ofset ve "yukarı" aracın kendi eksenlerine göre (tüp içinde)
     public Func<Vector3, Vector3> sinir;      // Kamerayı bölümün içinde tutar (duvarın dışına çıkmasın)
 
     Vector3 konum;
@@ -79,8 +80,12 @@ public class TakipKamera : MonoBehaviour
         gren.intensity.value = 0.18f;
     }
 
+    // Kamerayı yumuşatma olmadan hedefin arkasına koyar (ışınlanmadan sonra).
+    public void Isinla() => konum = HedefKonum();
+
     Vector3 HedefKonum()
     {
+        if (yerelTakip) return hedef.TransformPoint(ofset);
         Vector3 p = hedef.position + Quaternion.Euler(0f, hedef.eulerAngles.y, 0f) * ofset;
         return sinir != null ? sinir(p) : p;
     }
@@ -90,10 +95,11 @@ public class TakipKamera : MonoBehaviour
         if (hedef == null) return;
 
         konum = Vector3.Lerp(konum, HedefKonum(), 1f - Mathf.Exp(-yumusaklik * Time.deltaTime));
-        Vector3 bakis = hedef.position + Vector3.up * 1.2f + hedef.forward * 2f;
+        Vector3 yukari = yerelTakip ? hedef.up : Vector3.up;
+        Vector3 bakis = hedef.position + yukari * 1.2f + hedef.forward * (yerelTakip ? 6f : 2f);
 
         transform.position = konum + UnityEngine.Random.insideUnitSphere * sarsinti;
-        transform.rotation = Quaternion.LookRotation(bakis - konum);
+        transform.rotation = Quaternion.LookRotation(bakis - konum, yukari);
         sarsinti = Mathf.MoveTowards(sarsinti, 0f, Time.deltaTime * 0.4f);
     }
 }

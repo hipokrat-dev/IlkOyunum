@@ -65,6 +65,17 @@ public static class Sekil
         return m;
     }
 
+    // Tek renkli yansıma haritası (gökyüzü yerine).
+    public static Cubemap DuzKupHarita(Color renk)
+    {
+        var harita = new Cubemap(8, TextureFormat.RGBA32, false);
+        var pikseller = new Color[64];
+        for (int i = 0; i < pikseller.Length; i++) pikseller[i] = renk;
+        for (int yuz = 0; yuz < 6; yuz++) harita.SetPixels(pikseller, (CubemapFace)yuz);
+        harita.Apply();
+        return harita;
+    }
+
     public static void Isilda(Material m, Color isik)
     {
         if (!m.HasProperty("_EmissionColor")) return;
@@ -148,6 +159,64 @@ public static class Sekil
                 int a = j * (bolmeX + 1) + i, b = a + 1, c = a + bolmeX + 1, d = c + 1;
                 ucgenler[t++] = a; ucgenler[t++] = c; ucgenler[t++] = b;
                 ucgenler[t++] = b; ucgenler[t++] = c; ucgenler[t++] = d;
+            }
+        }
+        return MeshYap(noktalar, uv, ucgenler);
+    }
+
+    // Z ekseni etrafında simit: R ana yarıçap, r kesit yarıçapı.
+    public static Mesh Halka(float R, float r, int dilim, int kesit)
+    {
+        return Parametrik(dilim, kesit, false, (fu, fv) =>
+        {
+            float t = fu * 2f * Mathf.PI, f = fv * 2f * Mathf.PI;
+            float d = R + r * Mathf.Cos(f);
+            return new Vector3(d * Mathf.Cos(t), d * Mathf.Sin(t), r * Mathf.Sin(f));
+        }, 6f, 1f);
+    }
+
+    // +Z yönünde uzanan, içinden bakılan tüp. yaricap(açı, z) duvarın o noktadaki yarıçapını verir.
+    public static Mesh Tup(float uzunluk, int dilim, int bolme, Func<float, float, float> yaricap, float uvU, float uvV)
+    {
+        return Parametrik(dilim, bolme, true, (fu, fv) =>
+        {
+            float t = fu * 2f * Mathf.PI, z = fv * uzunluk;
+            float r = yaricap(t, z);
+            return new Vector3(r * Mathf.Cos(t), r * Mathf.Sin(t), z);
+        }, uvU, uvV);
+    }
+
+    static Mesh Parametrik(int nu, int nv, bool icYuz, Func<float, float, Vector3> nokta, float uvU, float uvV)
+    {
+        var noktalar = new Vector3[(nu + 1) * (nv + 1)];
+        var uv = new Vector2[noktalar.Length];
+        for (int j = 0; j <= nv; j++)
+        {
+            for (int i = 0; i <= nu; i++)
+            {
+                int k = j * (nu + 1) + i;
+                noktalar[k] = nokta((float)i / nu, (float)j / nv);
+                uv[k] = new Vector2((float)i / nu * uvU, (float)j / nv * uvV);
+            }
+        }
+
+        var ucgenler = new int[nu * nv * 6];
+        int t = 0;
+        for (int j = 0; j < nv; j++)
+        {
+            for (int i = 0; i < nu; i++)
+            {
+                int a = j * (nu + 1) + i, b = a + 1, c = a + nu + 1, d = c + 1;
+                if (icYuz)
+                {
+                    ucgenler[t++] = a; ucgenler[t++] = c; ucgenler[t++] = b;
+                    ucgenler[t++] = b; ucgenler[t++] = c; ucgenler[t++] = d;
+                }
+                else
+                {
+                    ucgenler[t++] = a; ucgenler[t++] = b; ucgenler[t++] = c;
+                    ucgenler[t++] = b; ucgenler[t++] = d; ucgenler[t++] = c;
+                }
             }
         }
         return MeshYap(noktalar, uv, ucgenler);

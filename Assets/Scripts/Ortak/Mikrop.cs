@@ -4,7 +4,7 @@ using UnityEngine;
 
 // Çürük bakterisi kolonisi (Streptococcus mutans benzeri): biyofilm üzerinde zincir halinde koklar.
 // Temizleme köpüğü değince eriyip kaybolur.
-public class Mikrop : MonoBehaviour
+public class Mikrop : MonoBehaviour, IKopukHedefi
 {
     public Action<Mikrop> temizlendi;
     public GameObject leke;       // Dişteki çürük/plak lekesi; koloniyle birlikte kaybolur
@@ -52,6 +52,8 @@ public class Mikrop : MonoBehaviour
         transform.localScale = new Vector3(ilkOlcek.x * nabiz, ilkOlcek.y / nabiz, ilkOlcek.z * nabiz);
         if (isaret != null) isaret.intensity = 1.6f + 0.9f * Mathf.Sin(z * 2.2f);
     }
+
+    public void KopukDegdi() => Temizle();
 
     public void Temizle()
     {

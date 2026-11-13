@@ -1,15 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
-using UnityEngine.SceneManagement;
 
 // Bölüm 1 — Ağız. Sahneyi kodla kurar ve bölüm akışını yönetir:
 // 10 çürük bakterisi kolonisini temizle -> Vücut Kartı -> yutkunma refleksi -> bölüm sonu.
-public class AgizBolumu : MonoBehaviour
+public class AgizBolumu : BolumTemeli
 {
-    enum Durum { Baslik, Oyun, Kart, Yutkunma, Bitti }
     enum DisTuru { Kesici, Kopek, KucukAzi, Azi }
 
     class Dis
@@ -23,9 +20,8 @@ public class AgizBolumu : MonoBehaviour
     const float A = 11f, B = 16f, ArkaZ = -12f, UstY = 11.4f;
     const int HedefMikrop = 10;
 
-    public static AgizBolumu Ornek { get; private set; }
+    public new static AgizBolumu Ornek => BolumTemeli.Ornek as AgizBolumu;
     public IReadOnlyList<Mikrop> Mikroplar => mikroplar;
-    public string DurumAdi => durum.ToString();
 
     readonly List<Dis> disler = new List<Dis>();
     readonly List<Mikrop> mikroplar = new List<Mikrop>();
@@ -37,25 +33,27 @@ public class AgizBolumu : MonoBehaviour
     Material disEti, dilMalzemesi, agizIci, tukuruk, bakteri, plak;
     Mesh kure;
 
-    Arayuz arayuz;
-    AracKontrol arac;
-    TakipKamera kamera;
     Collider arkaDuvar;
     Transform kok;
 
-    Camera kameraGozu;
-    Durum durum = Durum.Baslik;
     int temizlenen, dalgaCarpma;
-    float baslangicZamani, sure;
-    bool duraklatildi;
     float dalgaSayaci = 22f, disKontrolSayaci;
-    bool ilkDalga = true, kartHazir, carpmaAnlatildi;
+    bool ilkDalga = true, carpmaAnlatildi;
+
+    protected override int BolumNo => 1;
+    protected override string BolumAdi => "Ağız";
+    protected override string SonrakiDurak => "Yemek Borusu";
+    protected override string SonrakiSahne => "YemekBorusuMide";
+    protected override string KartBasligi => "VÜCUT KARTI: AĞIZ";
+    protected override string KartMetni =>
+        "•  Diş minesi vücudumuzun en sert maddesidir; kemikten bile serttir.\n\n" +
+        "•  Tükürük bezlerimiz her gün yaklaşık 1 litre tükürük üretir.\n\n" +
+        "•  Dilimizin üzerinde tatları algılayan binlerce tat tomurcuğu vardır.";
 
     // ------------------------------------------------------------------ Kurulum
 
-    void Awake()
+    protected override void SahneyiKur()
     {
-        Ornek = this;
         kok = new GameObject("Agiz").transform;
 
         MalzemeleriHazirla();
@@ -67,51 +65,22 @@ public class AgizBolumu : MonoBehaviour
         arac = AracKontrol.Olustur(new Vector3(0f, 0.1f, -4f));
         kamera = TakipKamera.Olustur(arac.transform, new Color(0.05f, 0.01f, 0.015f));
         kamera.sinir = KameraSiniri;
-        kameraGozu = kamera.GetComponent<Camera>();
 
         MikroplariKur();
-
-        arayuz = Arayuz.Olustur(transform);
-        arayuz.Sayac(0, HedefMikrop);
-
-        // Başlangıç ekranı
-        arac.kontrolAcik = false;
-        arayuz.Perde(0.55f);
-        arayuz.OrtaYazi("VÜCUT YOLCULUĞU\n<size=44>Bölüm 1: Ağız</size>\n\n<size=34>Başlamak için BOŞLUK tuşuna bas</size>");
     }
 
-    void OnDestroy()
+    protected override void ArayuzHazir()
     {
-        Time.timeScale = 1f;
-        AudioListener.pause = false;
+        arayuz.Gosterge($"Mikrop: 0 / {HedefMikrop}");
     }
 
     void Start()
     {
-        // Parlak yüzeyler (araç, mine, ıslak doku) gökyüzünü değil ağzın içini yansıtsın.
-        var yansima = new GameObject("YansimaSondasi").AddComponent<ReflectionProbe>();
-        yansima.transform.SetParent(kok, false);
-        yansima.transform.position = new Vector3(0f, 4.5f, 2f);
-        yansima.size = new Vector3(60f, 40f, 70f);
-        yansima.mode = ReflectionProbeMode.Realtime;
-        yansima.refreshMode = ReflectionProbeRefreshMode.ViaScripting;
-        yansima.timeSlicingMode = ReflectionProbeTimeSlicingMode.NoTimeSlicing;
-        yansima.resolution = 128;
-        yansima.hdr = true;
-        yansima.RenderProbe();
+        YansimaSondasi(new Vector3(0f, 4.5f, 2f), new Vector3(60f, 40f, 70f)).transform.SetParent(kok, true);
     }
 
-    public void Basla()
+    protected override void OyunBasladi()
     {
-        if (durum != Durum.Baslik) return;
-        durum = Durum.Oyun;
-        baslangicZamani = Time.time;
-        arac.kontrolAcik = true;
-        arayuz.Perde(0f);
-        arayuz.OrtaYazi("");
-        Ses.Cal(Ses.Tur.Tik);
-        Ses.OrtamBaslat();
-
         arayuz.Telsiz("Çırak, beni duyuyor musun? Küçülme ışını seni ve kapsülü bir insanın ağzına göndermiş! Sakin ol, sana yol göstereceğim.");
         arayuz.Telsiz("Altındaki pürüzlü zemin dil. Çevrendeki dev beyaz kayalar ise dişler.");
         arayuz.Telsiz("Dişlerin dibindeki yeşilimsi kümeler çürük bakterileri. WASD ile sür, BOŞLUK ile temizleme köpüğü at. 10 koloniyi de temizle!");
@@ -329,7 +298,7 @@ public class AgizBolumu : MonoBehaviour
     {
         temizlenen++;
         kamera.sarsinti = Mathf.Max(kamera.sarsinti, 0.05f);
-        arayuz.Sayac(temizlenen, HedefMikrop);
+        arayuz.Gosterge($"Mikrop: {temizlenen} / {HedefMikrop}", true);
 
         if (temizlenen == 1)
         {
@@ -340,62 +309,21 @@ public class AgizBolumu : MonoBehaviour
             arayuz.Telsiz("Yarısı tamam! Dişleri günde iki kez fırçalamak bu bakterileri uzak tutar.", true);
         }
 
-        if (temizlenen >= HedefMikrop && durum == Durum.Oyun) StartCoroutine(KartAkisi());
+        if (temizlenen >= HedefMikrop) BolumuBitir("Hepsini temizledin, aferin çırak! Bu dişler artık güvende.");
     }
 
     // ------------------------------------------------------------------ Oyun döngüsü
 
-    void Update()
+    protected override void OyunGuncelle()
     {
-        var kb = Keyboard.current;
-        var kol = Gamepad.current;
-        bool onay = (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) ||
-                    (kol != null && kol.buttonSouth.wasPressedThisFrame);
-
-        if (durum == Durum.Oyun && ((kb != null && kb.escapeKey.wasPressedThisFrame) ||
-                                    (kol != null && kol.startButton.wasPressedThisFrame)))
+        DisleriAnlat();
+        HedefiGoster();
+        dalgaSayaci -= Time.deltaTime;
+        if (dalgaSayaci <= 0f)
         {
-            Duraklat(!duraklatildi);
+            dalgaSayaci = Random.Range(13f, 19f);
+            DalgaGonder();
         }
-        if (duraklatildi) return;
-
-        switch (durum)
-        {
-            case Durum.Baslik:
-                if (onay) Basla();
-                break;
-
-            case Durum.Oyun:
-                DisleriAnlat();
-                HedefiGoster();
-                dalgaSayaci -= Time.deltaTime;
-                if (dalgaSayaci <= 0f)
-                {
-                    dalgaSayaci = Random.Range(13f, 19f);
-                    DalgaGonder();
-                }
-                break;
-
-            case Durum.Kart:
-                if (onay) KartiKapat();
-                break;
-
-            case Durum.Bitti:
-                if ((kb != null && kb.rKey.wasPressedThisFrame) || (kol != null && kol.buttonSouth.wasPressedThisFrame))
-                {
-                    SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-                }
-                break;
-        }
-    }
-
-    void Duraklat(bool dur)
-    {
-        duraklatildi = dur;
-        Time.timeScale = dur ? 0f : 1f;
-        AudioListener.pause = dur;
-        arayuz.Perde(dur ? 0.55f : 0f);
-        arayuz.OrtaYazi(dur ? "DURAKLATILDI\n\n<size=34>Devam etmek için ESC tuşuna bas</size>" : "");
     }
 
     // En yakın koloni ekranda değilse, ekranın kenarında yönünü gösteren işaret çıkar.
@@ -502,38 +430,8 @@ public class AgizBolumu : MonoBehaviour
 
     // ------------------------------------------------------------------ Bölüm sonu
 
-    IEnumerator KartAkisi()
+    protected override IEnumerator CikisSahnesi()
     {
-        durum = Durum.Kart;
-        sure = Time.time - baslangicZamani;
-        arayuz.HedefIsareti(null);
-        arayuz.Telsiz("Hepsini temizledin, aferin çırak! Bu dişler artık güvende.", true);
-        yield return new WaitForSeconds(2.5f);
-
-        arac.kontrolAcik = false;
-        Ses.Cal(Ses.Tur.Basari);
-        arayuz.KartGoster("VÜCUT KARTI: AĞIZ",
-            "•  Diş minesi vücudumuzun en sert maddesidir; kemikten bile serttir.\n\n" +
-            "•  Tükürük bezlerimiz her gün yaklaşık 1 litre tükürük üretir.\n\n" +
-            "•  Dilimizin üzerinde tatları algılayan binlerce tat tomurcuğu vardır.",
-            "");
-        yield return new WaitForSeconds(1.2f);
-
-        arayuz.KartAltYazi("Devam etmek için BOŞLUK tuşuna bas");
-        kartHazir = true;
-    }
-
-    public void KartiKapat()
-    {
-        if (durum != Durum.Kart || !kartHazir) return;
-        arayuz.KartGizle();
-        Ses.Cal(Ses.Tur.Tik);
-        StartCoroutine(Yutkunma());
-    }
-
-    IEnumerator Yutkunma()
-    {
-        durum = Durum.Yutkunma;
         arayuz.Telsiz("Eyvah... Yutkunma refleksi geliyor! Sıkı tutun çırak!", true);
         kamera.sarsinti = 0.12f;
         yield return new WaitForSeconds(2f);
@@ -552,18 +450,12 @@ public class AgizBolumu : MonoBehaviour
             kamera.sarsinti = 0.25f;
             yield return null;
         }
-
-        yield return arayuz.Karart(1.2f);
-        arac.Durdur();
-        durum = Durum.Bitti;
-
-        // Puan: dalgalara yakalanmadan ve hızlı bitirene 3 yıldız
-        int yildiz = dalgaCarpma == 0 && sure <= 100f ? 3 : dalgaCarpma <= 1 && sure <= 170f ? 2 : 1;
-        string yildizlar = new string('★', yildiz) + new string('☆', 3 - yildiz);
-        arayuz.OrtaYazi("BÖLÜM 1 TAMAMLANDI\n<color=#FFD040><size=90>" + yildizlar + "</size></color>\n" +
-            $"<size=36>Süre: {(int)sure / 60}:{(int)sure % 60:00}     Dalgaya yakalanma: {dalgaCarpma}</size>\n\n" +
-            "Sıradaki durak: Yemek Borusu\n<size=34>Tekrar oynamak için R tuşuna bas</size>");
     }
+
+    // Puan: dalgalara yakalanmadan ve hızlı bitirene 3 yıldız
+    protected override int Yildiz() => dalgaCarpma == 0 && sure <= 100f ? 3 : dalgaCarpma <= 1 && sure <= 170f ? 2 : 1;
+
+    protected override string SonucSatiri() => $"{SureYazisi}     Dalgaya yakalanma: {dalgaCarpma}";
 
     // Kamerayı çenenin içinde tutar; diş etlerinin arkasına geçip görüşü kapatmasın.
     static Vector3 KameraSiniri(Vector3 p)

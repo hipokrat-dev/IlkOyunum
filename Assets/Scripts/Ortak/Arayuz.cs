@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public class Arayuz : MonoBehaviour
 {
     Font font;
-    Text sayac, telsizMetin, kartBaslik, kartGovde, kartAlt, ortaYazi;
+    Text sayac, ipucu, telsizMetin, kartBaslik, kartGovde, kartAlt, ortaYazi;
     GameObject telsizKutu, kart;
     Image karartma;
     RectTransform hedefIsareti;
@@ -51,8 +51,8 @@ public class Arayuz : MonoBehaviour
         // Sağ üst: kontrol ipucu
         var ipucuPanel = Panel("Ipucu", transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
             new Vector2(-30f, -30f), new Vector2(680f, 84f), panelRengi);
-        Dolduran("Metin", ipucuPanel.transform, 26, TextAnchor.MiddleCenter, new Color(0.85f, 0.92f, 1f), 10f)
-            .text = "WASD / Oklar: Sür    BOŞLUK: Köpük    ESC: Duraklat";
+        ipucu = Dolduran("Metin", ipucuPanel.transform, 26, TextAnchor.MiddleCenter, new Color(0.85f, 0.92f, 1f), 10f);
+        ipucu.text = "WASD / Oklar: Sür    BOŞLUK: Köpük    ESC: Duraklat";
 
         // Alt orta: telsiz kutusu
         var telsizPanel = Panel("Telsiz", transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
@@ -101,11 +101,15 @@ public class Arayuz : MonoBehaviour
 
     // ---------- Dışarıya açık işlevler ----------
 
-    public void Sayac(int temizlenen, int toplam)
+    // Sol üstteki gösterge (mikrop sayısı, kalkan, kalan yol...). vurgu: kısa bir büyüyüp küçülme.
+    public void Gosterge(string metin, bool vurgu = false)
     {
-        sayac.text = $"Mikrop: {temizlenen} / {toplam}";
-        if (temizlenen > 0) StartCoroutine(SayacVurgusu());
+        sayac.text = metin;
+        if (vurgu) StartCoroutine(SayacVurgusu());
     }
+
+    // Sağ üstteki kontrol ipucu
+    public void Ipucu(string metin) => ipucu.text = metin;
 
     IEnumerator SayacVurgusu()
     {
@@ -163,6 +167,16 @@ public class Arayuz : MonoBehaviour
             yield return null;
         }
         karartma.color = Color.black;
+    }
+
+    public IEnumerator Aydinlat(float sure)
+    {
+        for (float t = 1f; t > 0f; t -= Time.deltaTime / sure)
+        {
+            karartma.color = new Color(0f, 0f, 0f, t);
+            yield return null;
+        }
+        karartma.color = Color.clear;
     }
 
     public void OrtaYazi(string metin) => ortaYazi.text = metin;

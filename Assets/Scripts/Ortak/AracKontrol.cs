@@ -12,10 +12,17 @@ public class AracKontrol : MonoBehaviour
     public float atesAraligi = 0.3f;
     public bool kontrolAcik = true;
 
+    // Ray modu: araç fizikle değil, bölümün verdiği konumla hareket eder (ör. yemek borusunda kayış).
+    // Bu modda yalnızca girdi okunur ve köpük atılır.
+    public bool rayModu;
+    public float rayHizi;
+    public float DonusGirdi => donusGirdi;
+
     Rigidbody rb;
     Material kopukMalzemesi;
     Vector3 itki;
     float ileriGirdi, donusGirdi, mevcutHiz, atesSayaci;
+    bool durduruldu;
 
     public static AracKontrol Olustur(Vector3 konum)
     {
@@ -94,7 +101,7 @@ public class AracKontrol : MonoBehaviour
         donusGirdi = 0f;
         atesSayaci -= Time.deltaTime;
 
-        Ses.Motor(kontrolAcik ? Mathf.Abs(mevcutHiz) / hiz : 0f);
+        Ses.Motor(!kontrolAcik ? 0f : rayModu ? 1f : Mathf.Abs(mevcutHiz) / hiz);
         if (!kontrolAcik) return;
 
         bool ates = false;
@@ -131,6 +138,8 @@ public class AracKontrol : MonoBehaviour
 
     void FixedUpdate()
     {
+        rb.isKinematic = rayModu || durduruldu;
+        if (rb.isKinematic) return;
         float dt = Time.fixedDeltaTime;
         rb.MoveRotation(rb.rotation * Quaternion.Euler(0f, donusGirdi * donusHizi * dt, 0f));
 
@@ -152,15 +161,27 @@ public class AracKontrol : MonoBehaviour
     public void Durdur()
     {
         kontrolAcik = false;
+        durduruldu = true;
         itki = Vector3.zero;
-        rb.linearVelocity = Vector3.zero;
+        if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
         rb.isKinematic = true;
+    }
+
+    // Aracı anında başka bir yere taşır (hızını sıfırlar).
+    public void Isinla(Vector3 konum, Quaternion donus)
+    {
+        itki = Vector3.zero;
+        mevcutHiz = 0f;
+        transform.SetPositionAndRotation(konum, donus);
+        rb.position = konum;
+        rb.rotation = donus;
+        if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;
     }
 
     void KopukAt()
     {
         Vector3 cikis = transform.position + Vector3.up * 0.6f + transform.forward * 1.7f;
-        Vector3 v = transform.forward * (16f + Mathf.Max(0f, mevcutHiz));
+        Vector3 v = transform.forward * (16f + Mathf.Max(0f, rayModu ? rayHizi : mevcutHiz));
         Kopuk.At(cikis, v, rb, kopukMalzemesi);
         Ses.Cal(Ses.Tur.Kopuk, 0.5f, Random.Range(0.9f, 1.15f));
     }
