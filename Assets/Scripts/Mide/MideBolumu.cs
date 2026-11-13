@@ -38,8 +38,8 @@ public class MideBolumu : BolumTemeli
 
     // Mide durumu
     static readonly float[] GuvenliNoktalar = { 6f, 22f, 40f, 58f };
-    float kalkan = 100f, asitDisiSure, cizirti, kasilmaSuresi, mideKasilmaSayaci = 12f;
-    int kalkanYenileme, guvenliNokta;
+    float cizirti, kasilmaSuresi, mideKasilmaSayaci = 12f;
+    int asitHasari, guvenliNokta;
     bool notrAnlatildi, ortaAnlatildi, mideKasilmaAnlatildi, kalkanAnlatildi;
 
     protected override int BolumNo => 2;
@@ -286,6 +286,8 @@ public class MideBolumu : BolumTemeli
 
             lokma.Dagit();
             lokmaCarpma++;
+            HasarAl(18,"Yiyeceğe çarpma");
+            if(Can<=0)return;
             hiz = 5f;
             itisSuresi = 0f;
             kamera.sarsinti = 0.22f;
@@ -364,14 +366,15 @@ public class MideBolumu : BolumTemeli
         YansimaSondasi(new Vector3(0f, 5f, MideZ), new Vector3(60f, 40f, 110f)).transform.SetParent(mideKok, true);
         Kopuk.zeminKontrolu = AsitKontrolu;
         asama = Asama.Mide;
+        arayuz.GorevGuncelle("Asidi köpükle nötrle, canını koru ve mide çıkışına ulaş.");
 
         arayuz.Ipucu("WASD / Oklar: Sür    BOŞLUK: Köpük    ESC: Duraklat");
-        arayuz.Gosterge("Kalkan: %100");
+        arayuz.Gosterge("Mide çıkışına ilerle");
         yield return arayuz.Aydinlat(0.7f);
 
         if (durum != Durum.Oyun) yield break;
         arac.kontrolAcik = true;
-        arayuz.Telsiz("Mideye hoş geldin! Yerdeki sarı-yeşil göller mide asidi. Kapsülün kalkanını eritir, üstünde durma!", true);
+        arayuz.Telsiz("Mideye hoş geldin! Yerdeki sarı-yeşil göller mide asidi. Kapsülün canını azaltır, üstünde durma!", true);
         arayuz.Telsiz("Köpüğün asidi kısa süreliğine etkisiz hale getirir. Önündeki göle köpük at, beyazlaşınca üstünden geç.");
         arayuz.Telsiz("Hedefin tam karşıdaki ışıklı halka: mide çıkışı.");
     }
@@ -419,8 +422,8 @@ public class MideBolumu : BolumTemeli
         }
         if (asitte)
         {
-            asitDisiSure = 0f;
-            kalkan -= 40f * dt;
+            if(HasarAl(12,"Mide asidi",.75f))asitHasari++;
+            if(Can<=0)return;
             kamera.sarsinti = Mathf.Max(kamera.sarsinti, 0.06f);
             cizirti -= dt;
             if (cizirti <= 0f)
@@ -432,25 +435,10 @@ public class MideBolumu : BolumTemeli
             if (!kalkanAnlatildi)
             {
                 kalkanAnlatildi = true;
-                arayuz.Telsiz("Asidin içindesin, kalkan eriyor! Hemen çık ya da köpükle asidi etkisiz hale getir.", true);
+                arayuz.Telsiz("Asidin içindesin, canın azalıyor! Hemen çık ya da köpükle asidi etkisiz hale getir.", true);
             }
         }
-        else
-        {
-            asitDisiSure += dt;
-            if (asitDisiSure > 1.5f) kalkan = Mathf.Min(100f, kalkan + 6f * dt);
-        }
-
-        if (kalkan <= 0f)
-        {
-            kalkanYenileme++;
-            kalkan = 70f;
-            arac.Isinla(new Vector3(0f, 0.2f, GuvenliNoktalar[guvenliNokta]), Quaternion.identity);
-            kamera.Isinla();
-            Ses.Cal(Ses.Tur.Carpma);
-            arayuz.Telsiz("Kalkan tükendi! Seni güvenli bir noktaya çektim ve kalkanı yeniledim. Asidi köpükle beyazlatmadan geçme.", true);
-        }
-        arayuz.Gosterge($"Kalkan: %{Mathf.CeilToInt(Mathf.Max(0f, kalkan))}");
+        arayuz.Gosterge("Mide çıkışına ilerle");
         arayuz.HedefIsareti(HedefYonu());
 
         // Mide kasılması: göller bir süreliğine taşar
@@ -523,8 +511,8 @@ public class MideBolumu : BolumTemeli
 
     // Puan: kalkanı hiç bitirmeden ve lokmalara pek çarpmadan bitirene 3 yıldız
     protected override int Yildiz() =>
-        kalkanYenileme == 0 && lokmaCarpma <= 2 ? 3 : kalkanYenileme <= 1 && lokmaCarpma <= 5 ? 2 : 1;
+        asitHasari == 0 && lokmaCarpma <= 2 ? 3 : asitHasari <= 3 && lokmaCarpma <= 5 ? 2 : 1;
 
     protected override string SonucSatiri() =>
-        $"{SureYazisi}     Lokmaya çarpma: {lokmaCarpma}     Kalkan yenileme: {kalkanYenileme}";
+        $"{SureYazisi}     Lokmaya çarpma: {lokmaCarpma}     Asit hasarı: {asitHasari}";
 }

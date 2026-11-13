@@ -50,7 +50,7 @@ public class Mikrop : MonoBehaviour, IKopukHedefi
         transform.position = merkez + new Vector3(Mathf.Sin(z * 0.6f) * 0.05f, Mathf.Sin(z) * 0.04f, Mathf.Cos(z * 0.5f) * 0.05f);
         float nabiz = 1f + Mathf.Sin(z * 1.7f) * 0.05f;
         transform.localScale = new Vector3(ilkOlcek.x * nabiz, ilkOlcek.y / nabiz, ilkOlcek.z * nabiz);
-        if (isaret != null) isaret.intensity = 1.6f + 0.9f * Mathf.Sin(z * 2.2f);
+        if (isaret != null) { isaret.enabled = !MobilKalite.Mobil; isaret.intensity = 0.35f + 0.12f * Mathf.Sin(z * 2.2f); }
     }
 
     public void KopukDegdi() => Temizle();

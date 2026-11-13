@@ -1,0 +1,42 @@
+{
+  "old_apk": {
+    "reproduced_on": "Android API 36 ARM64 tablet emulator",
+    "resolution": [
+      1280,
+      800
+    ],
+    "magenta_pixel_ratio": 0.8007,
+    "screenshot": "renders/eski-pembe.png"
+  },
+  "root_cause": "Sekil.Malzeme cloned CreatePrimitive default material. URP default material is provided only under UNITY_EDITOR; player build did not have explicit surface material reference.",
+  "fix": [
+    "Explicit Resources material reference instead of CreatePrimitive template",
+    "32 dynamic material shader combinations retained",
+    "Runtime camera postprocessing shader stripping disabled",
+    "Mobile Forward/OpenGLES3 pipeline; explicit default URP asset"
+  ],
+  "new_apk": {
+    "versionName": "1.0.1",
+    "versionCode": 2,
+    "build_errors": 0,
+    "build_warnings": "6 existing obsolete API warnings and 2 editor MCP reconnect warnings",
+    "size_mib": 115.04,
+    "sha256": "98cc857b617f658b98f4590210f0c80ff3a4c2f21c64a2dcbd608532af27ad03",
+    "zip_error": null,
+    "installed_as_update": true,
+    "mouth_magenta_pixel_ratio": 0.0,
+    "mouth_screenshot": "renders/yeni-oyun.png",
+    "map_screenshot": "renders/yeni-harita.png",
+    "hardware_scope": "Android API36 ARM64 tablet emulator, OpenGLES3 SwiftShader; Lenovo/Honor physical devices not connected",
+    "esophagus_magenta_pixel_ratio": 0.0,
+    "tested_flows": [
+      "Update installation from previous APK; verified versionCode=2",
+      "Main menu -> Mouth introduction -> playable 3D scene",
+      "Open and close current-organ map",
+      "Pause -> main menu -> free region selection",
+      "Esophagus introduction -> playable 3D scene",
+      "Health depletion result remained functional while the test vehicle was idle"
+    ],
+    "shader_errors_in_android_log": false
+  }
+}

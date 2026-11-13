@@ -28,6 +28,7 @@ public class AgizBolumu : BolumTemeli
     readonly HashSet<DisTuru> anlatilanDisler = new HashSet<DisTuru>();
     readonly Dictionary<DisTuru, Mesh> disMeshleri = new Dictionary<DisTuru, Mesh>();
     readonly Dictionary<DisTuru, Material> disMalzemeleri = new Dictionary<DisTuru, Material>();
+    readonly List<CombineInstance> disEtiBirlesimleri = new List<CombineInstance>();
     readonly Dictionary<string, Mesh> modeller = new Dictionary<string, Mesh>();
 
     Material disEti, dilMalzemesi, agizIci, tukuruk, bakteri, plak;
@@ -61,10 +62,18 @@ public class AgizBolumu : BolumTemeli
         AgizIciniKur();
         DisleriKur();
         DisEtleriniKur();
+        AgizAnatomisi.Kur(kok, disEti, dilMalzemesi);
 
-        arac = AracKontrol.Olustur(new Vector3(0f, 0.1f, -4f));
+        arac = AracKontrol.Olustur(new Vector3(0f, 0.1f, 5f));
+        arac.ziplamaAcik=true;
+        arac.Isinla(new Vector3(0f,.1f,5f),Quaternion.Euler(0f,180f,0f));
         kamera = TakipKamera.Olustur(arac.transform, new Color(0.05f, 0.01f, 0.015f));
         kamera.sinir = KameraSiniri;
+        kamera.ofset = new Vector3(0f, 4.2f, -7.8f);
+        kamera.bakisMesafesi = 4f;
+        kamera.GetComponent<Camera>().fieldOfView = 60f;
+        kamera.Isinla();
+        AgizGorsel.KameraAyarla(kamera.GetComponent<Camera>());
 
         MikroplariKur();
     }
@@ -72,6 +81,7 @@ public class AgizBolumu : BolumTemeli
     protected override void ArayuzHazir()
     {
         arayuz.Gosterge($"Mikrop: 0 / {HedefMikrop}");
+        arayuz.Ipucu("WASD: Sür  •  BOŞLUK: Zıpla  •  CTRL / COMMAND: Köpük  •  H: Harita");
     }
 
     void Start()
@@ -83,7 +93,7 @@ public class AgizBolumu : BolumTemeli
     {
         arayuz.Telsiz("Çırak, beni duyuyor musun? Küçülme ışını seni ve kapsülü bir insanın ağzına göndermiş! Sakin ol, sana yol göstereceğim.");
         arayuz.Telsiz("Altındaki pürüzlü zemin dil. Çevrendeki dev beyaz kayalar ise dişler.");
-        arayuz.Telsiz("Dişlerin dibindeki yeşilimsi kümeler çürük bakterileri. WASD ile sür, BOŞLUK ile temizleme köpüğü at. 10 koloniyi de temizle!");
+        arayuz.Telsiz("Dişlerin dibindeki yeşilimsi kümeler çürük bakterileri. Kapsülü sür, temizleme köpüğüyle bakterileri hedefle. 10 koloniyi de temizle!");
     }
 
     // Modeller ve dokular Blender'da üretilir (Araclar/blender/agiz_modelleri.py) ve
@@ -103,7 +113,8 @@ public class AgizBolumu : BolumTemeli
 
     void MalzemeleriHazirla()
     {
-        foreach (Mesh mesh in Resources.LoadAll<Mesh>("Agiz/AgizModelleri")) modeller[mesh.name] = mesh;
+        foreach (Mesh mesh in Resources.LoadAll<Mesh>("Mobil/AgizModelleri")) modeller[mesh.name] = mesh;
+        foreach (Mesh mesh in Resources.LoadAll<Mesh>("AgizV2/Disler")) modeller[mesh.name] = mesh;
 
         var disAdlari = new Dictionary<DisTuru, string>
         {
@@ -112,21 +123,18 @@ public class AgizBolumu : BolumTemeli
         foreach (var cift in disAdlari)
         {
             string dosya = "dis_" + cift.Value.ToLowerInvariant();
-            disMeshleri[cift.Key] = Model("Dis_" + cift.Value);
-            disMalzemeleri[cift.Key] = Sekil.DokuluMalzeme(Doku(dosya + "_albedo"), Doku(dosya + "_normal"),
-                Doku(dosya + "_ao"), 0.88f);
+            disMeshleri[cift.Key] = Model("Dis_" + cift.Value + "_LOD0");
+            disMalzemeleri[cift.Key] = AgizGorsel.Malzeme(dosya, .78f, 1f, .3f, true);
         }
 
-        var mukozaRenk = Doku("mukoza_albedo");
-        var mukozaNormal = Doku("mukoza_normal");
-        disEti = Sekil.DokuluMalzeme(mukozaRenk, mukozaNormal, null, 0.8f, 1f, 0.8f);
-        agizIci = Sekil.DokuluMalzeme(mukozaRenk, mukozaNormal, null, 0.58f, 6f, 0.5f);
-        agizIci.SetColor("_BaseColor", new Color(0.7f, 0.55f, 0.55f));   // yanaklar/damak biraz daha koyu
-        dilMalzemesi = Sekil.DokuluMalzeme(Doku("dil_albedo"), Doku("dil_normal"), null, 0.6f, 5f, 1.2f);
+        disEti = AgizGorsel.Malzeme("mukoza", .9f, 1.15f, .28f);
+        agizIci = AgizGorsel.Malzeme("mukoza", .85f, 3f, .24f);
+        agizIci.SetColor("_BaseColor", new Color(.76f, .68f, .71f));
+        dilMalzemesi = AgizGorsel.Malzeme("dil", .76f, 3.5f, .38f);
 
         tukuruk = Sekil.Malzeme(new Color(0.85f, 0.93f, 0.97f, 0.38f), 0.97f);
-        plak = Sekil.Malzeme(new Color(0.42f, 0.3f, 0.14f), 0.35f);
-        bakteri = Sekil.Malzeme(new Color(0.62f, 0.66f, 0.3f), 0.86f);
+        plak = Sekil.Malzeme(new Color(.48f, .34f, .18f), .46f);
+        bakteri = Sekil.Malzeme(new Color(0.42f, 0.49f, 0.20f), 0.58f);
         Sekil.Isilda(bakteri, new Color(0.1f, 0.13f, 0.03f));
 
         kure = Sekil.SuperElips(1f, 1f, 12);
@@ -134,42 +142,44 @@ public class AgizBolumu : BolumTemeli
 
     void IsiklariKur()
     {
-        // Aralık dudaklardan içeri sızan ışık
-        var gunes = new GameObject("DudakIsigi").AddComponent<Light>();
-        gunes.type = LightType.Directional;
-        gunes.color = new Color(1f, 0.93f, 0.85f);
-        gunes.intensity = 1.5f;
-        gunes.shadows = LightShadows.Soft;
-        gunes.transform.rotation = Quaternion.Euler(38f, 172f, 0f);
-        gunes.transform.SetParent(kok, false);
+        // Tek gölgeli ana ışık; diğer yüzeylere gölgesiz, sıcak ortam dolgusu.
+        var ana = new GameObject("DudakIsigi").AddComponent<Light>();
+        ana.type = LightType.Directional;
+        ana.color = new Color(1f, .86f, .75f);
+        ana.intensity = 1.15f;
+        ana.shadows = LightShadows.Soft;
+        ana.shadowStrength = .58f;
+        ana.shadowBias = .035f;
+        ana.shadowNormalBias = .25f;
+        ana.transform.rotation = Quaternion.Euler(48f, -28f, 0f);
+        ana.transform.SetParent(kok, false);
 
-        // Damaktan yansıyan yumuşak dolgu ışığı (gölgesiz)
-        var dolgu = new GameObject("DolguIsigi").AddComponent<Light>();
+        var dolgu = new GameObject("YumusakDokuDolgusu").AddComponent<Light>();
         dolgu.type = LightType.Directional;
-        dolgu.color = new Color(1f, 0.8f, 0.78f);
-        dolgu.intensity = 0.55f;
+        dolgu.color = new Color(1f,.78f,.72f);
+        dolgu.intensity = .48f;
         dolgu.shadows = LightShadows.None;
-        dolgu.transform.rotation = Quaternion.Euler(60f, -20f, 0f);
-        dolgu.transform.SetParent(kok, false);
+        dolgu.transform.rotation = Quaternion.Euler(35f,140f,0);
+        dolgu.transform.SetParent(kok,false);
 
-        RenderSettings.ambientMode = AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(0.4f, 0.28f, 0.29f);
+        RenderSettings.ambientMode = AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color(.48f, .35f, .32f);
+        RenderSettings.ambientEquatorColor = new Color(.34f, .23f, .22f);
+        RenderSettings.ambientGroundColor = new Color(.20f, .10f, .10f);
+        RenderSettings.reflectionIntensity = .85f;
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.ExponentialSquared;
-        RenderSettings.fogColor = new Color(0.1f, 0.025f, 0.03f);
-        RenderSettings.fogDensity = 0.016f;
+        RenderSettings.fogColor = new Color(.13f, .035f, .045f);
+        RenderSettings.fogDensity = .019f;
     }
 
     void AgizIciniKur()
     {
         // Dil: ortasında oluk olan, hafif dalgalı yüzey. Fizik için altında düz bir zemin var.
-        var dilMesh = Sekil.Izgara(new Vector2(-17f, -19f), new Vector2(17f, 22f), 90, 110, (x, z) =>
-        {
-            float y = -0.16f * Mathf.Exp(-x * x / 1.2f) + 0.06f * (Mathf.PerlinNoise(x * 0.7f + 50f, z * 0.7f + 50f) - 0.5f);
-            float arka = Mathf.Max(0f, ArkaZ - 2f - z);   // dil kökü boğaza doğru eğimle iner
-            return y - 0.35f * arka * arka;
-        }, 1f);
-        Sekil.MeshParca(dilMesh, "Dil", kok, Vector3.zero, Vector3.one, dilMalzemesi);
+        var dilMesh = Sekil.Izgara(new Vector2(-17f, -19f), new Vector2(17f, 22f), 64, 80,
+            AgizGorsel.DilYuksekligi, 1f);
+        var dil = Sekil.MeshParca(dilMesh, "Dil", kok, Vector3.zero, Vector3.one, dilMalzemesi);
+        dil.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
 
         var zemin = new GameObject("DilZemini").AddComponent<BoxCollider>();
         zemin.transform.SetParent(kok, false);
@@ -225,17 +235,23 @@ public class AgizBolumu : BolumTemeli
             case DisTuru.Kopek: yari = new Vector3(1f, 1.75f, 1.05f); break;
             default: yari = new Vector3(1.25f, 1.55f, 0.8f); break;
         }
-        var donus = Quaternion.LookRotation(iceri);
+        var donus = Quaternion.LookRotation(iceri) * Quaternion.Euler(0, Mathf.Sin(konum.x * 2f + konum.z) * 3f, 0);
 
         // Alt diş (çarpışmalı). Modelin orijini diş eti hizasında, kökü aşağıda.
-        var alt = Sekil.MeshParca(disMeshleri[tur], "Dis_" + tur, kok, konum, Vector3.one, disMalzemeleri[tur], donus);
+        string ad = tur.ToString();
+        var alt = AgizGorsel.Dis(kok, "Dis_" + ad, konum, donus, disMalzemeleri[tur],
+            Model("Dis_"+ad+"_LOD0"), Model("Dis_"+ad+"_LOD1"), Model("Dis_"+ad+"_LOD2"), true);
         var kutu = alt.AddComponent<BoxCollider>();
         kutu.center = new Vector3(0f, yari.y, 0f);
         kutu.size = yari * 2f;
 
-        // Üst diş: aynı modelin baş aşağı hali (yalnızca görsel)
-        Sekil.MeshParca(disMeshleri[tur], "UstDis_" + tur, kok, konum + Vector3.up * UstY, Vector3.one,
-            disMalzemeleri[tur], donus * Quaternion.Euler(0f, 0f, 180f));
+        var ustDonus = donus * Quaternion.Euler(0f, 0f, 180f);
+        var ustKonum = konum + Vector3.up * UstY;
+        AgizGorsel.Dis(kok, "UstDis_" + ad, ustKonum, ustDonus, disMalzemeleri[tur],
+            Model("Dis_"+ad+"_LOD0"), Model("Dis_"+ad+"_LOD1"), Model("Dis_"+ad+"_LOD2"), false);
+        var collet = Model("Collet_" + ad);
+        disEtiBirlesimleri.Add(new CombineInstance {mesh=collet, transform=Matrix4x4.TRS(konum,donus,Vector3.one)});
+        disEtiBirlesimleri.Add(new CombineInstance {mesh=collet, transform=Matrix4x4.TRS(ustKonum,ustDonus,Vector3.one)});
 
         disler.Add(new Dis { konum = konum, iceri = iceri, tur = tur, derinlik = yari.z * 2f });
     }
@@ -245,6 +261,11 @@ public class AgizBolumu : BolumTemeli
         var model = Model("DisEti");
         Sekil.MeshParca(model, "AltDisEti", kok, Vector3.zero, Vector3.one, disEti);
         Sekil.MeshParca(model, "UstDisEti", kok, Vector3.up * UstY, Vector3.one, disEti, Quaternion.Euler(0f, 0f, 180f));
+
+        var birlesik = SahneVarliklari.Kaydet(new Mesh {name="DisBoynuDisEti"});
+        birlesik.CombineMeshes(disEtiBirlesimleri.ToArray());
+        var boyunlar = Sekil.MeshParca(birlesik,"DisBoynuDisEti",kok,Vector3.zero,Vector3.one,disEti);
+        boyunlar.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
 
         // Araç dişlerin arasından dışarı kaçamasın: U biçimli çene yolu boyunca görünmez duvarlar
         var yol = new List<Vector3>();
@@ -285,10 +306,9 @@ public class AgizBolumu : BolumTemeli
             mikrop.transform.SetParent(kok, true);
             mikrop.temizlendi = MikropTemizlendi;
 
-            // Dişin dibinde koyu çürük/plak lekesi
-            mikrop.leke = Sekil.MeshParca(kure, "CurukLekesi", kok,
-                dis.konum + dis.iceri * (dis.derinlik * 0.5f - 0.05f) + Vector3.up * 0.9f,
-                new Vector3(0.55f, 0.4f, 0.1f), plak, Quaternion.LookRotation(dis.iceri));
+            // Biyofilm diş boynuna yayılan düzensiz birikim; koloni temizlenince kaldırılır.
+            mikrop.leke = AgizGorsel.Biyofilm(kok,dis.konum + dis.iceri * (dis.derinlik * .5f - .17f)
+                + Vector3.up * .68f,Quaternion.LookRotation(dis.iceri),plak,i);
 
             mikroplar.Add(mikrop);
         }
@@ -409,6 +429,7 @@ public class AgizBolumu : BolumTemeli
         {
             if (durum != Durum.Oyun) return;
             dalgaCarpma++;
+            HasarAl(20,"Tükürük dalgası");
             Ses.Cal(Ses.Tur.Carpma);
             kamera.sarsinti = 0.2f;
             if (carpmaAnlatildi) return;
@@ -419,7 +440,7 @@ public class AgizBolumu : BolumTemeli
         if (ilkDalga)
         {
             ilkDalga = false;
-            arayuz.Telsiz("Dikkat, tükürük dalgası geliyor! Dalganın boş bıraktığı tarafa kaç!", true);
+            arayuz.Telsiz("Dikkat, tükürük dalgası geliyor! Dalganın boş tarafına kaç ya da üzerinden zıpla!", true);
             arayuz.Telsiz("Tükürük aslında dostumuz: lokmayı yumuşatır, sindirimi daha ağızdayken başlatır ve dişleri korur.");
         }
         else if (arayuz.TelsizBos)

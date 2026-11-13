@@ -11,6 +11,8 @@ public class AracKontrol : MonoBehaviour
     public float donusHizi = 115f;
     public float atesAraligi = 0.3f;
     public bool kontrolAcik = true;
+    public bool ziplamaAcik;
+    float sonZiplama=-10;
 
     // Ray modu: araç fizikle değil, bölümün verdiği konumla hareket eder (ör. yemek borusunda kayış).
     // Bu modda yalnızca girdi okunur ve köpük atılır.
@@ -43,14 +45,14 @@ public class AracKontrol : MonoBehaviour
         var malzemeler = new Dictionary<string, Material>
         {
             { "Arac_Govde", boya },
-            { "Arac_Cam", Sekil.Malzeme(new Color(0.35f, 0.5f, 0.55f, 0.32f), 0.97f) },
+            { "Arac_Cam", Sekil.Malzeme(new Color(0.055f, 0.12f, 0.15f), 0.92f, 0.5f) },
             { "Arac_Lastik", Sekil.Malzeme(new Color(0.045f, 0.045f, 0.05f), 0.3f) },
             { "Arac_Metal", Sekil.Malzeme(new Color(0.62f, 0.64f, 0.67f), 0.82f, 1f) },
             { "Arac_Far", far }
         };
 
         int bulunan = 0;
-        foreach (Mesh mesh in Resources.LoadAll<Mesh>("Ortak/AracModeli"))
+        foreach (Mesh mesh in Resources.LoadAll<Mesh>(MobilKalite.Mobil ? "Mobil/AracModeli" : "Ortak/AracModeli"))
         {
             if (!malzemeler.TryGetValue(mesh.name, out Material malzeme)) continue;
             Sekil.MeshParca(mesh, mesh.name, t, Vector3.zero, Vector3.one, malzeme);
@@ -66,11 +68,11 @@ public class AracKontrol : MonoBehaviour
         var isik = isikNesnesi.AddComponent<Light>();
         isik.type = LightType.Spot;
         isik.color = new Color(1f, 0.96f, 0.88f);
-        isik.intensity = 90f;
+        isik.intensity = 38f;
         isik.range = 26f;
         isik.spotAngle = 75f;
         isik.innerSpotAngle = 35f;
-        isik.shadows = LightShadows.Soft;
+        isik.shadows = LightShadows.None;
 
         var kapsul = kok.AddComponent<CapsuleCollider>();
         kapsul.direction = 2;
@@ -119,7 +121,8 @@ public class AracKontrol : MonoBehaviour
             if (kb.sKey.isPressed || kb.downArrowKey.isPressed) ileriGirdi -= 1f;
             if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) donusGirdi += 1f;
             if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) donusGirdi -= 1f;
-            ates |= kb.spaceKey.isPressed;
+            ates |= kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed || kb.leftMetaKey.isPressed || kb.rightMetaKey.isPressed || (!ziplamaAcik && kb.spaceKey.isPressed);
+            if(ziplamaAcik && kb.spaceKey.wasPressedThisFrame)Zipla();
             DalisGirdi |= kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
         }
 
@@ -132,7 +135,8 @@ public class AracKontrol : MonoBehaviour
                 ileriGirdi += cubuk.y;
                 donusGirdi += cubuk.x;
             }
-            ates |= kol.buttonSouth.isPressed || kol.rightTrigger.isPressed;
+            ates |= (!ziplamaAcik && kol.buttonSouth.isPressed) || kol.rightTrigger.isPressed;
+            if(ziplamaAcik && kol.buttonSouth.wasPressedThisFrame)Zipla();
             DalisGirdi |= kol.buttonEast.isPressed || kol.leftTrigger.isPressed;
         }
         // Dokunmatik: sol yarıdaki çubuk sürer, sağ yarı köpük atar
@@ -151,6 +155,14 @@ public class AracKontrol : MonoBehaviour
             atesSayaci = atesAraligi;
             KopukAt();
         }
+    }
+
+    public bool Zipla()
+    {
+        if(!ziplamaAcik || !kontrolAcik || rayModu || rb.isKinematic || Time.timeScale==0 || Time.time-sonZiplama<.4f)return false;
+        if(!Physics.Raycast(transform.position+Vector3.up*.2f,Vector3.down,out var hit,.45f,~0,QueryTriggerInteraction.Ignore) || hit.rigidbody==rb)return false;
+        if(rb.linearVelocity.y>.5f)return false;
+        sonZiplama=Time.time;var v=rb.linearVelocity;v.y=7.3f;rb.linearVelocity=v;return true;
     }
 
     void FixedUpdate()

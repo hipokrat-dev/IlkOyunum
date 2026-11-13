@@ -15,6 +15,7 @@ public static class Cizim
     {
         get
         {
+            if (font == null) font = Resources.Load<Font>("Arayuz/Konsol/Manrope");
             if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (font == null) font = Font.CreateDynamicFontFromOSFont("Arial", 32);
             return font;
@@ -55,11 +56,13 @@ public static class Cizim
 
         var olcek = g.GetComponent<CanvasScaler>();
         olcek.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        olcek.referenceResolution = new Vector2(1920f, 1080f);
-        olcek.matchWidthOrHeight = 0.5f;      // her en-boy oranında (telefon, tablet, geniş ekran) dengeli ölçek
+        olcek.referenceResolution = new Vector2(1280f, 720f);
+        olcek.matchWidthOrHeight = 0f;      // her en-boy oranında (telefon, tablet, geniş ekran) dengeli ölçek
 
+        g.AddComponent<KonsolOlcegi>();
         guvenli = Kutu("GuvenliAlan", g.transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, Vector2.zero);
         GuvenliAlaniUygula(guvenli);
+        g.AddComponent<GuvenliEkran>().alan = guvenli;
         return tuval;
     }
 
@@ -90,6 +93,7 @@ public static class Cizim
     {
         var resim = Kutu(ad, ebeveyn, capaMin, capaMax, pivot, konum, boyut).gameObject.AddComponent<Image>();
         resim.color = renk;
+        if (ad != "Karartma") { resim.sprite = PremiumTema.Yuvarlak; resim.type = Image.Type.Sliced; }
         resim.raycastTarget = false;
         return resim;
     }
@@ -132,7 +136,10 @@ public class DugmeListesi
 {
     readonly List<(RectTransform alan, Action is_)> dugmeler = new List<(RectTransform, Action)>();
 
-    public void Ekle(RectTransform alan, Action is_) => dugmeler.Add((alan, is_));
+    public void Ekle(RectTransform alan, Action is_) {
+        var fx=alan.GetComponent<PremiumDugmeEfekti>();if(fx==null)fx=alan.gameObject.AddComponent<PremiumDugmeEfekti>();
+        dugmeler.Add((alan,()=>{fx.Bas();is_();}));
+    }
 
     // Bu karede bir düğmeye basıldıysa işini yapar ve true döner.
     public bool Isle()
@@ -147,4 +154,10 @@ public class DugmeListesi
         }
         return false;
     }
+}
+
+public class GuvenliEkran : MonoBehaviour
+{
+    public RectTransform alan;
+    void LateUpdate(){if(alan!=null)Cizim.GuvenliAlaniUygula(alan);}
 }

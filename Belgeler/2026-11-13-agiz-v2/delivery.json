@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-13T17:34:45.845383",
+  "project": "/Users/gokhanyener/ilkoyunum",
+  "changes": [
+    "Four anatomical tooth types, crown smoothing, cervical gum collars",
+    "32 tooth LOD groups with 3386/846/304 triangle meshes",
+    "Matched 1024px albedo, normal, AO and organic wetness maps; Android ASTC 6x6",
+    "Combined palate and tongue geometry with geometric papillae",
+    "Warm single shadowed key plus shadowless fill; quarter-resolution bloom; existing adaptive 60 FPS target retained",
+    "Entry points into the mouth towards soft palate; driving colliders unchanged",
+    "Foam gain x0.55, speech gain x1.12; missing-clip guard"
+  ],
+  "verification": {
+    "automated_gameplay": "validation.txt; 0 errors; 14 assertions",
+    "screen_formats": [
+      "1920x1080",
+      "2400x1080",
+      "1600x1200"
+    ],
+    "speech_clip_playing": true,
+    "latest_editor_render_snapshot": {
+      "triangles": 114358,
+      "drawCalls": 50
+    },
+    "device_fps": "Not measured: adb devices returned no physical devices. Editor draw statistics are not device FPS."
+  },
+  "source_assets": {
+    "type": "Original procedural geometry and paired material bakes authored in Blender 5.1.2",
+    "generator": "Araclar/blender/agiz_v2.py",
+    "blender_file": "Araclar/blender/AgizV2.blend",
+    "resources": "Assets/Resources/AgizV2",
+    "cinematic_reference": "Assets/Resources/Sinematik/Agiz.mp4 (existing, unchanged)"
+  },
+  "rollback": "Original AgizBolumu.cs, AgizAnatomisi.cs and Ses.cs are preserved in this folder/backup. Original Resources/Agiz and Mobil model files were not replaced."
+}

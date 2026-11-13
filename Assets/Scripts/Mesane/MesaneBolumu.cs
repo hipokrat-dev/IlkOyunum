@@ -124,7 +124,7 @@ public class MesaneBolumu : BolumTemeli
         Isik(kok, new Vector3(0f, 15f, 40f), new Color(1f, 0.9f, 0.65f), 130f, 50f);
 
         // Kristaller dibe çökmüş: üçü çıkışın önünde, diğerleri dağınık
-        var diken = Sekil.SuperElips(2.4f, 2.4f, 12);
+        var diken = MineralModeli.Olustur();
         var malzeme = Sekil.Malzeme(new Color(0.96f, 0.93f, 0.75f), 0.85f);
         Sekil.Isilda(malzeme, new Color(0.16f, 0.14f, 0.06f));
         Vector3[] yerler =

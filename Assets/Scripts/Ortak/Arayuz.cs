@@ -4,247 +4,170 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Oyun içi arayüz: gösterge, profesörün telsiz kutusu, Vücut Kartı, ekran karartma,
-// bölüm sonu düğmeleri ve tablet için dokunmatik kontroller. Tüm bölümler aynı arayüzü kullanır.
-// Her en-boy oranında ekranı doldurur; göstergeler çentik/yuvarlak köşe dışındaki güvenli alana yerleşir.
 public class Arayuz : MonoBehaviour
 {
-    Text sayac, ipucu, telsizMetin, kartBaslik, kartGovde, kartAlt, ortaYazi, atesYazisi;
-    GameObject telsizKutu, kart, ipucuPanel, dokunmatikKatman, dalisDugmesi, bitisDugmeleri;
-    Image karartma;
-    RectTransform guvenli, hedefIsareti, cubukTaban, cubukTopuz, atesDugmesi, duraklatDugmesi;
-    Text devamYazisi;
-    RectTransform devamDugmesi, tekrarDugmesi, menuDugmesi;
-    Action devamIsi, tekrarIsi, menuIsi;
-
-    readonly Queue<string> kuyruk = new Queue<string>();
-    readonly DugmeListesi dugmeler = new DugmeListesi();
+    RectTransform guvenli,hud,cubukTaban,cubukTopuz,atesDugmesi,dalisAlan,ziplaAlan,hedefIsareti;
+    GameObject gorevPaneli,kart,dokunmatikKatman,dalisDugmesi,bitisDugmeleri,telsizKutu,pausePanel;
+    Text sayac,ipucu,telsizMetin,kartBaslik,kartGovde,kartAlt,ortaYazi,atesYazisi,gorevSeridi,konumYazi,muzikYazi;
+    Text[] bilgiler=new Text[3];
+    RectTransform kartDevam;
+    Image karartma,canResim;RectTransform canDolgu;Text canMetin,hasarMetin;float hasarSure;
+    VucutHaritasi harita;
+    int bolumNo=1;
+    bool kontrollerAcik,dalisVar;
+    public bool HaritaAcik => harita!=null && harita.Acik;
+    public string GorevMetni {get;private set;}
+    public bool TelsizBos => akis==null && kuyruk.Count==0;
+    public bool DuraklatIstendi {get;private set;}
+    public bool HaritaIstendi {get;private set;}
+    public bool DevamIstendi {get;private set;}
+    public bool KartDevamIstendi {get;private set;}
+    public bool MenuIstendi {get;private set;}
+    readonly DugmeListesi dugmeler=new DugmeListesi(),gorevDugmeleri=new DugmeListesi(),kartDugmeleri=new DugmeListesi(),pauseDugmeleri=new DugmeListesi(),sonDugmeleri=new DugmeListesi();
+    readonly Queue<string> kuyruk=new Queue<string>();
     Coroutine akis;
-    Vector2Int sonEkran;
-
-    public bool TelsizBos => akis == null && kuyruk.Count == 0;
-    public bool DuraklatIstendi { get; private set; }       // duraklat düğmesine bu karede basıldı
-
-    static Vector2 Orta => Cizim.Orta;
-
-    public static Arayuz Olustur(Transform ebeveyn)
-    {
-        var tuval = Cizim.Tuval("Arayuz", ebeveyn, out RectTransform guvenli);
-        var a = tuval.gameObject.AddComponent<Arayuz>();
-        a.guvenli = guvenli;
-        a.Kur();
-        return a;
-    }
-
+    public static Arayuz Olustur(Transform parent){var c=Cizim.Tuval("Arayuz",parent,out var safe);var a=c.gameObject.AddComponent<Arayuz>();a.guvenli=safe;a.Kur();return a;}
     void Kur()
     {
-        var panelRengi = new Color(0.04f, 0.08f, 0.18f, 0.75f);
-
-        // Sol üst: gösterge
-        var sayacPanel = Cizim.Panel("Sayac", guvenli, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f),
-            new Vector2(30f, -30f), new Vector2(400f, 84f), panelRengi);
-        sayac = Cizim.Dolduran("Metin", sayacPanel.transform, 38, TextAnchor.MiddleCenter, Color.white, 10f);
-        sayac.fontStyle = FontStyle.Bold;
-
-        // Sağ üst: duraklat düğmesi ve (klavyede) kontrol ipucu
-        duraklatDugmesi = Cizim.Dugme("Duraklat", guvenli, new Vector2(1f, 1f), new Vector2(1f, 1f),
-            new Vector2(-30f, -30f), new Vector2(84f, 84f), "II", 40, panelRengi, out _);
-        dugmeler.Ekle(duraklatDugmesi, () => DuraklatIstendi = true);
-
-        var ipucuResmi = Cizim.Panel("Ipucu", guvenli, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
-            new Vector2(-130f, -30f), new Vector2(660f, 84f), panelRengi);
-        ipucuPanel = ipucuResmi.gameObject;
-        ipucu = Cizim.Dolduran("Metin", ipucuResmi.transform, 26, TextAnchor.MiddleCenter, new Color(0.85f, 0.92f, 1f), 10f);
-        ipucu.text = "WASD / Oklar: Sür    BOŞLUK: Köpük    ESC: Duraklat";
-
-        // Alt orta: telsiz kutusu
-        var telsizPanel = Cizim.Panel("Telsiz", guvenli, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-            new Vector2(0f, 40f), new Vector2(1200f, 190f), panelRengi);
-        telsizKutu = telsizPanel.gameObject;
-        var etiket = Cizim.Yazi("Etiket", telsizPanel.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -12f), new Vector2(-60f, 40f), 26, TextAnchor.MiddleLeft, new Color(1f, 0.82f, 0.25f));
-        etiket.text = "PROFESÖR  (telsiz)";
-        etiket.fontStyle = FontStyle.Bold;
-        telsizMetin = Cizim.Yazi("Mesaj", telsizPanel.transform, Vector2.zero, Vector2.one, Orta,
-            new Vector2(0f, -22f), new Vector2(-60f, -70f), 32, TextAnchor.UpperLeft, Color.white);
-        telsizKutu.SetActive(false);
-
-        DokunmatikKatmaniKur();
-
-        // Ekran dışında kalan hedefin yönünü gösteren işaret
-        var isaret = Cizim.Panel("HedefIsareti", transform, Orta, Orta, Orta, Vector2.zero, new Vector2(30f, 30f),
-            new Color(0.8f, 1f, 0.35f, 0.9f));
-        hedefIsareti = (RectTransform)isaret.transform;
-        hedefIsareti.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        isaret.gameObject.SetActive(false);
-
-        // Orta: Vücut Kartı
-        var cerceve = Cizim.Panel("VucutKarti", guvenli, Orta, Orta, Orta, Vector2.zero, new Vector2(1000f, 680f),
-            new Color(1f, 0.6f, 0.15f));
-        kart = cerceve.gameObject;
-        var ic = Cizim.Panel("Ic", cerceve.transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, new Vector2(-24f, -24f),
-            new Color(1f, 0.97f, 0.88f));
-        kartBaslik = Cizim.Yazi("Baslik", ic.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -30f), new Vector2(-60f, 80f), 56, TextAnchor.MiddleCenter, new Color(0.8f, 0.25f, 0.3f));
-        kartBaslik.fontStyle = FontStyle.Bold;
-        kartGovde = Cizim.Yazi("Govde", ic.transform, Vector2.zero, Vector2.one, Orta,
-            new Vector2(0f, -20f), new Vector2(-100f, -240f), 34, TextAnchor.UpperLeft, new Color(0.2f, 0.12f, 0.1f));
-        kartGovde.lineSpacing = 1.15f;
-        kartAlt = Cizim.Yazi("Alt", ic.transform, Vector2.zero, new Vector2(1f, 0f), new Vector2(0.5f, 0f),
-            new Vector2(0f, 24f), new Vector2(-60f, 50f), 28, TextAnchor.MiddleCenter, new Color(0.45f, 0.35f, 0.3f));
-        kart.SetActive(false);
-
-        // En üstte: tüm ekranı kaplayan karartma, orta yazı ve bölüm sonu düğmeleri
-        karartma = Cizim.Panel("Karartma", transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, Vector2.zero,
-            new Color(0f, 0f, 0f, 0f));
-        ortaYazi = Cizim.Yazi("OrtaYazi", transform, Vector2.zero, Vector2.one, Orta, new Vector2(0f, 40f), new Vector2(-200f, -200f),
-            60, TextAnchor.MiddleCenter, Color.white);
-        ortaYazi.fontStyle = FontStyle.Bold;
-        ortaYazi.lineSpacing = 1.2f;
-
-        var satir = Cizim.Kutu("BitisDugmeleri", transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-            new Vector2(0f, 70f), new Vector2(1200f, 110f));
-        bitisDugmeleri = satir.gameObject;
-        var yesil = new Color(0.15f, 0.55f, 0.3f, 0.95f);
-        var mavi = new Color(0.12f, 0.25f, 0.5f, 0.95f);
-        devamDugmesi = Cizim.Dugme("Devam", satir, Orta, Orta, new Vector2(-400f, 0f), new Vector2(360f, 100f), "DEVAM", 40, yesil, out devamYazisi);
-        tekrarDugmesi = Cizim.Dugme("Tekrar", satir, Orta, Orta, new Vector2(0f, 0f), new Vector2(360f, 100f), "TEKRAR OYNA", 36, mavi, out _);
-        menuDugmesi = Cizim.Dugme("Menu", satir, Orta, Orta, new Vector2(400f, 0f), new Vector2(360f, 100f), "ANA MENÜ", 36, mavi, out _);
-        dugmeler.Ekle(devamDugmesi, () => devamIsi?.Invoke());
-        dugmeler.Ekle(tekrarDugmesi, () => tekrarIsi?.Invoke());
-        dugmeler.Ekle(menuDugmesi, () => menuIsi?.Invoke());
-        bitisDugmeleri.SetActive(false);
-    }
-
-    // Tablet kontrolleri: solda sürüş çubuğu, sağda köpük ve (gerekirse) dalış düğmesi
-    void DokunmatikKatmaniKur()
-    {
-        var katman = Cizim.Kutu("Dokunmatik", transform, Vector2.zero, Vector2.one, Orta, Vector2.zero, Vector2.zero);
-        dokunmatikKatman = katman.gameObject;
-        var soluk = new Color(1f, 1f, 1f, 0.16f);
-
-        cubukTaban = (RectTransform)Cizim.Panel("CubukTaban", katman, Vector2.zero, Vector2.zero, Orta,
-            new Vector2(230f, 230f), new Vector2(300f, 300f), soluk).transform;
-        cubukTaban.GetComponent<Image>().sprite = Cizim.Daire;
-        cubukTopuz = (RectTransform)Cizim.Panel("CubukTopuz", cubukTaban, Orta, Orta, Orta, Vector2.zero,
-            new Vector2(130f, 130f), new Color(1f, 1f, 1f, 0.4f)).transform;
-        cubukTopuz.GetComponent<Image>().sprite = Cizim.Daire;
-
-        atesDugmesi = (RectTransform)Cizim.Panel("Ates", katman, new Vector2(1f, 0f), new Vector2(1f, 0f), Orta,
-            new Vector2(-200f, 300f), new Vector2(230f, 230f), new Color(1f, 1f, 1f, 0.2f)).transform;
-        atesDugmesi.GetComponent<Image>().sprite = Cizim.Daire;
-        atesYazisi = Cizim.Dolduran("Yazi", atesDugmesi, 34, TextAnchor.MiddleCenter, Color.white, 6f);
-        atesYazisi.text = "KÖPÜK";
-        atesYazisi.fontStyle = FontStyle.Bold;
-
-        var dalis = Cizim.Panel("Dalis", katman, new Vector2(1f, 0f), new Vector2(1f, 0f), Orta,
-            new Vector2(-440f, 180f), new Vector2(200f, 200f), new Color(0.4f, 0.75f, 1f, 0.3f));
-        dalis.sprite = Cizim.Daire;
-        dalisDugmesi = dalis.gameObject;
-        var dalisYazisi = Cizim.Dolduran("Yazi", dalis.transform, 34, TextAnchor.MiddleCenter, Color.white, 6f);
-        dalisYazisi.text = "DAL";
-        dalisYazisi.fontStyle = FontStyle.Bold;
-        dalisDugmesi.SetActive(false);
-
-        DokunmatikGirdi.dalisAlani = null;
-        DokunmatikGirdi.digerDugme = p => RectTransformUtility.RectangleContainsScreenPoint(duraklatDugmesi, p, null);
-        dokunmatikKatman.SetActive(false);
-    }
-
-    void OnDestroy()
-    {
-        DokunmatikGirdi.dalisAlani = null;
-        DokunmatikGirdi.digerDugme = null;
-    }
-
-    void Update()
-    {
-        DokunmatikGirdi.Guncelle();
-
-        // Ekran boyutu ya da yönü değişirse güvenli alanı yeniden uygula
-        var ekran = new Vector2Int(Screen.width, Screen.height);
-        if (ekran != sonEkran)
-        {
-            sonEkran = ekran;
-            Cizim.GuvenliAlaniUygula(guvenli);
+        karartma=Cizim.Panel("Karartma",transform,Vector2.zero,Vector2.one,Cizim.Orta,Vector2.zero,Vector2.zero,Color.clear);karartma.transform.SetAsFirstSibling();
+        hud=PremiumTema.Alan("OyunGostergeleri",guvenli,0,0,1,1);
+        var loc=PremiumTema.Uyarla(PremiumTema.Kart(hud,"BulunulanBolge",.025f,.855f,.20f,.115f,PremiumTema.Gece),new Rect(.035f,.915f,.49f,.065f));
+        PremiumTema.Metin(loc,"Etiket","GÖREV BÖLGESİ",.07f,.55f,.86f,.38f,20,PremiumTema.Turkuaz,true);
+        konumYazi=PremiumTema.Metin(loc,"Konum","Ağız",.07f,.13f,.86f,.44f,28,Color.white,true);
+        var counter=PremiumTema.Uyarla(PremiumTema.Kart(hud,"Sayac",.24f,.855f,.23f,.115f,PremiumTema.Gece),new Rect(.035f,.845f,.49f,.06f));
+        PremiumTema.Metin(counter,"Etiket","GÖREV DURUMU",.07f,.55f,.86f,.38f,20,PremiumTema.Soluk,true);
+        sayac=PremiumTema.Metin(counter,"Metin","",.07f,.13f,.86f,.44f,28,Color.white,true);
+        var map=PremiumTema.Uyarla(PremiumTema.Dugme(hud,"Neredeyim","Neredeyim?",.70f,.855f,.17f,.115f),new Rect(.55f,.915f,.28f,.065f));
+        dugmeler.Ekle(map,()=>HaritaIstendi=true);
+        var pause=PremiumTema.Uyarla(PremiumTema.Dugme(hud,"Duraklat","",.89f,.855f,.085f,.115f),new Rect(.85f,.915f,.115f,.065f));PremiumTema.Ikon(pause,"pause",.20f,.20f,.60f,.60f);
+        dugmeler.Ekle(pause,()=>DuraklatIstendi=true);
+        var health=PremiumTema.Uyarla(PremiumTema.Kart(hud,"CanBar",.49f,.855f,.19f,.115f,PremiumTema.Gece),new Rect(.55f,.845f,.415f,.06f));
+        canMetin=PremiumTema.Metin(health,"CanDegeri","CAN  100 / 100",.07f,.51f,.86f,.35f,22,Color.white,true);
+        var track=PremiumTema.Kart(health,"CanYuvasi",.07f,.19f,.86f,.23f,new Color(.06f,.10f,.13f));
+        canDolgu=PremiumTema.Alan("Dolgu",track,.02f,.12f,.96f,.76f);canResim=canDolgu.gameObject.AddComponent<Image>();canResim.sprite=PremiumTema.Yuvarlak;canResim.type=Image.Type.Sliced;canResim.color=PremiumTema.Turkuaz;canResim.raycastTarget=false;
+        hasarMetin=PremiumTema.Metin(hud,"HasarUyarisi","",.30f,.57f,.40f,.07f,29,PremiumTema.Altin,true);hasarMetin.alignment=TextAnchor.MiddleCenter;PremiumTema.Uyarla(hasarMetin,new Rect(.06f,.64f,.88f,.065f));
+        var task=PremiumTema.Uyarla(PremiumTema.Kart(hud,"GorevSeridi",.025f,.745f,.50f,.09f,PremiumTema.Gece),new Rect(.035f,.755f,.93f,.075f));
+        gorevSeridi=PremiumTema.Metin(task,"Hedef","",.04f,.12f,.92f,.76f,25,PremiumTema.Altin);
+        ipucu=PremiumTema.Metin(hud,"Ipucu","WASD: Sür  •  Ctrl / Command: Köpük  •  H: Harita",.23f,.012f,.54f,.05f,20,PremiumTema.Soluk);ipucu.alignment=TextAnchor.MiddleCenter;
+        var radio=PremiumTema.Uyarla(PremiumTema.Kart(guvenli,"Telsiz",.26f,.07f,.48f,.18f,PremiumTema.Gece),new Rect(.035f,.36f,.93f,.14f));telsizKutu=radio.gameObject;
+        PremiumTema.Metin(radio,"Etiket","PROFESÖR  /  BAĞLANTI AKTİF",.05f,.72f,.90f,.20f,20,PremiumTema.Turkuaz,true);
+        telsizMetin=PremiumTema.Metin(radio,"Mesaj","",.05f,.09f,.90f,.58f,26,Color.white);telsizMetin.alignment=TextAnchor.UpperLeft;telsizKutu.SetActive(false);
+        DokunmatikKur();
+        hedefIsareti=PremiumTema.Kart(guvenli,"HedefIsareti",.5f,.5f,.015f,.025f,PremiumTema.Altin);hedefIsareti.gameObject.SetActive(false);
+        var card=PremiumTema.Pencere(guvenli,"VucutKarti",new Vector2(1020,640),new Vector2(680,1080));kart=card.gameObject;
+        PremiumTema.Metin(card,"Etiket","ARAŞTIRMA ARŞİVİ  /  YENİ KEŞİF",.07f,.87f,.86f,.05f,22,PremiumTema.Turkuaz,true);
+        kartBaslik=PremiumTema.Metin(card,"Baslik","",.07f,.73f,.86f,.12f,44,Color.white,true);
+        for(int i=0;i<3;i++){
+            var row=PremiumTema.Kart(card,"Bilgi"+i,.07f,.54f-i*.17f,.86f,.15f,PremiumTema.Panel);
+            PremiumTema.Metin(row,"No",(i+1).ToString("00"),.035f,.15f,.09f,.70f,30,PremiumTema.Altin,true);
+            bilgiler[i]=PremiumTema.Metin(row,"Bilgi","",.15f,.12f,.80f,.76f,28,Color.white);
         }
-
-        // Dokunmatik kontroller yalnızca dokunmatik kullanılırken ve oyun sırasında görünür
-        bool goster = DokunmatikGirdi.Etkin && kontrollerAcik;
-        if (dokunmatikKatman.activeSelf != goster) dokunmatikKatman.SetActive(goster);
-        ipucuPanel.SetActive(!DokunmatikGirdi.Etkin);
-        if (!goster) return;
-
-        // Çubuk, parmağın dokunduğu yerde belirir; bırakılınca köşesine döner
-        float menzil = Mathf.Max(60f, Screen.height * 0.13f);
-        if (DokunmatikGirdi.CubukTutuluyor) cubukTaban.position = DokunmatikGirdi.CubukMerkezi;
-        else cubukTaban.anchoredPosition = new Vector2(230f, 230f);
-        cubukTopuz.position = cubukTaban.position + (Vector3)(DokunmatikGirdi.Cubuk * menzil);
-        atesDugmesi.localScale = Vector3.one * (DokunmatikGirdi.Ates ? 0.9f : 1f);
+        kartAlt=PremiumTema.Metin(card,"Alt","",.07f,.06f,.36f,.10f,22,PremiumTema.Soluk);
+        kartDevam=PremiumTema.Dugme(card,"KartDevam","Koleksiyona ekle  ›",.45f,.06f,.48f,.10f,true);
+        kartDugmeleri.Ekle(kartDevam,()=>KartDevamIstendi=true);kart.SetActive(false);
+        var end=PremiumTema.Pencere(guvenli,"BolumSonu",new Vector2(1000,600),new Vector2(680,900));bitisDugmeleri=end.gameObject;
+        PremiumTema.Metin(end,"Etiket","KAPSÜL  /  GÖREV RAPORU",.07f,.85f,.86f,.07f,22,PremiumTema.Turkuaz,true);
+        ortaYazi=PremiumTema.Metin(end,"Sonuc","",.07f,.32f,.86f,.46f,44,Color.white,true);ortaYazi.alignment=TextAnchor.MiddleCenter;bitisDugmeleri.SetActive(false);
+        var pauseRoot=PremiumTema.Pencere(guvenli,"DuraklatMenusu",new Vector2(650,600),new Vector2(650,850));pausePanel=pauseRoot.gameObject;
+        PremiumTema.Metin(pauseRoot,"Etiket","KAPSÜL BEKLEMEDE",.09f,.85f,.82f,.06f,22,PremiumTema.Turkuaz,true);
+        PremiumTema.Metin(pauseRoot,"Baslik","Kısa bir mola",.09f,.69f,.82f,.14f,46,Color.white,true);
+        pauseDugmeleri.Ekle(PremiumTema.Dugme(pauseRoot,"OyunaDon","Oyuna dön  ›",.09f,.49f,.82f,.14f,true),()=>DevamIstendi=true);
+        pauseDugmeleri.Ekle(PremiumTema.Dugme(pauseRoot,"HaritaAc","Neredeyim?",.09f,.31f,.39f,.14f),()=>HaritaIstendi=true);
+        var music=PremiumTema.Dugme(pauseRoot,"Muzik","Müzik: Açık",.52f,.31f,.39f,.14f);muzikYazi=music.GetComponentInChildren<Text>();pauseDugmeleri.Ekle(music,()=>{OyunMuzigi.Degistir();MuzikYenile();});
+        pauseDugmeleri.Ekle(PremiumTema.Dugme(pauseRoot,"AnaMenu","Ana menüye dön",.09f,.13f,.82f,.14f),()=>MenuIstendi=true);pausePanel.SetActive(false);
+        harita=VucutHaritasi.Olustur(guvenli);
+        DokunmatikGirdi.digerDugme=p=>HaritaAcik || (pausePanel!=null&&pausePanel.activeSelf) || (gorevPaneli!=null&&gorevPaneli.activeSelf) || kart.activeSelf || bitisDugmeleri.activeSelf || RectTransformUtility.RectangleContainsScreenPoint(map,p,null) || RectTransformUtility.RectangleContainsScreenPoint(pause,p,null) || (ziplaAlan.gameObject.activeInHierarchy&&RectTransformUtility.RectangleContainsScreenPoint(ziplaAlan,p,null));
     }
-
-    bool kontrollerAcik;
-
-    // ---------- Dışarıya açık işlevler ----------
-
-    // Bu karede bir ekran düğmesine basıldıysa işini yapar ve true döner.
-    public bool DugmeleriIsle()
+    void DokunmatikKur()
     {
-        DuraklatIstendi = false;
-        DokunmatikGirdi.Guncelle();
+        var touch=PremiumTema.Alan("Dokunmatik",guvenli,0,0,1,1);dokunmatikKatman=touch.gameObject;
+        cubukTaban=Daire(touch,"Surus",.12f,.19f,156);cubukTopuz=Daire(cubukTaban,"Topuz",.5f,.5f,66);
+        atesDugmesi=Daire(touch,"Ates",.89f,.19f,142);atesDugmesi.GetComponent<Image>().color=new Color(.27f,.49f,.54f,.9f);PremiumTema.Ikon(atesDugmesi,"kopuk",.27f,.40f,.46f,.40f);
+        atesYazisi=PremiumTema.Metin(atesDugmesi,"Yazi","KÖPÜK",.1f,.14f,.8f,.25f,23,Color.white,true);atesYazisi.alignment=TextAnchor.MiddleCenter;
+        ziplaAlan=Daire(touch,"Zipla",.76f,.30f,116);PremiumTema.Ikon(ziplaAlan,"zipla",.28f,.42f,.44f,.39f,PremiumTema.Altin);var z=PremiumTema.Metin(ziplaAlan,"Yazi","ZIPLA",.1f,.14f,.8f,.25f,22,Color.white,true);z.alignment=TextAnchor.MiddleCenter;
+        dugmeler.Ekle(ziplaAlan,()=>UnityEngine.Object.FindFirstObjectByType<AracKontrol>()?.Zipla());
+        dalisAlan=Daire(touch,"Dalis",.76f,.30f,116);dalisDugmesi=dalisAlan.gameObject;PremiumTema.Ikon(dalisAlan,"dal",.28f,.42f,.44f,.39f);var d=PremiumTema.Metin(dalisAlan,"Yazi","DAL",.1f,.14f,.8f,.25f,22,Color.white,true);d.alignment=TextAnchor.MiddleCenter;
+        dalisDugmesi.SetActive(false);ziplaAlan.gameObject.SetActive(false);touch.gameObject.SetActive(false);
+    }
+    RectTransform Daire(Transform parent,string name,float x,float y,float size){var r=Cizim.Kutu(name,parent,new Vector2(x,y),new Vector2(x,y),Cizim.Orta,Vector2.zero,new Vector2(size,size));var im=r.gameObject.AddComponent<KonsolYuzeyi>();im.daire=true;im.dugme=true;im.color=new Color(.13f,.20f,.27f,.88f);im.raycastTarget=false;return r;}
+    public void BolumAyarla(int no){bolumNo=no;konumYazi.text=VucutHaritasi.KisaAd(no);ziplaAlan.gameObject.SetActive(no==1);}
+    void Update(){
+        if(hud==null)return;
+        if(hasarSure>0){hasarSure-=Time.deltaTime;if(hasarSure<=0)hasarMetin.text="";}
+        DokunmatikGirdi.Guncelle();hud.gameObject.SetActive(kontrollerAcik);dokunmatikKatman.SetActive(kontrollerAcik&&DokunmatikGirdi.Etkin);
+        ipucu.gameObject.SetActive(!DokunmatikGirdi.Etkin);
+        if(dokunmatikKatman.activeSelf){
+            KontrolYerlesimi();
+            if(DokunmatikGirdi.CubukTutuluyor)cubukTaban.position=DokunmatikGirdi.CubukMerkezi;
+            else {cubukTaban.anchoredPosition=Vector2.zero;}
+            cubukTopuz.anchoredPosition=DokunmatikGirdi.Cubuk*42f;
+            atesDugmesi.localScale=Vector3.one*(DokunmatikGirdi.Ates?.94f:1);
+        }
+    }
+    public void KontrolYerlesimi(){
+            bool portrait=guvenli.rect.width<guvenli.rect.height;
+            cubukTaban.anchorMin=cubukTaban.anchorMax=portrait?new Vector2(.19f,.12f):new Vector2(.12f,.19f);
+            atesDugmesi.anchorMin=atesDugmesi.anchorMax=portrait?new Vector2(.81f,.12f):new Vector2(.89f,.19f);
+            ziplaAlan.anchorMin=ziplaAlan.anchorMax=dalisAlan.anchorMin=dalisAlan.anchorMax=portrait?new Vector2(.80f,.255f):new Vector2(.76f,.30f);
+    }
+    public bool DugmeleriIsle(){
+        if(pausePanel==null)return false;
+        DuraklatIstendi=HaritaIstendi=DevamIstendi=KartDevamIstendi=MenuIstendi=false;DokunmatikGirdi.Guncelle();
+        if(HaritaAcik){harita.Isle();return true;}
+        if(pausePanel.activeSelf)return pauseDugmeleri.Isle();
+        if(gorevPaneli!=null&&gorevPaneli.activeSelf)return gorevDugmeleri.Isle();
+        if(kart.activeSelf)return kartDugmeleri.Isle();
+        if(bitisDugmeleri.activeSelf)return sonDugmeleri.Isle();
         return dugmeler.Isle();
     }
-
-    // Oyun sırasında dokunmatik kontrolleri (çubuk, köpük) gösterir/gizler.
-    public void Kontroller(bool acik) => kontrollerAcik = acik;
-
-    // Dalış düğmesi (yalnızca mesanede)
-    public void DalisDugmesi(bool goster)
+    public void HaritayiAc(Action kapat){GameObject previous=null;foreach(var g in new[]{gorevPaneli,pausePanel,kart,bitisDugmeleri})if(g!=null&&g.activeSelf){previous=g;g.SetActive(false);break;}harita.Ac(bolumNo,GorevMetni,()=>{if(previous!=null)previous.SetActive(true);kapat?.Invoke();});}
+    public void HaritaIsle()=>harita.Isle();
+    public void DuraklatGoster(bool on){pausePanel.SetActive(on);if(on){pausePanel.transform.SetAsLastSibling();MuzikYenile();}}
+    void MuzikYenile(){muzikYazi.text="Müzik: "+(OyunMuzigi.Acik?"Açık":"Kapalı");}
+    public void GorevGoster(int no,string baslik,Action basla)
     {
-        dalisDugmesi.SetActive(goster);
-        var alan = (RectTransform)dalisDugmesi.transform;
-        DokunmatikGirdi.dalisAlani = goster
-            ? p => RectTransformUtility.RectangleContainsScreenPoint(alan, p, null)
-            : (Func<Vector2, bool>)null;
+        if(gorevPaneli!=null)Destroy(gorevPaneli);
+        var p=PremiumTema.Alan("GorevBrifingi",guvenli,0,0,1,1);gorevPaneli=p.gameObject;
+        var backdrop=PremiumTema.Alan("BolgeSinematikGorseli",p,0,0,1,1);var image=backdrop.gameObject.AddComponent<RawImage>();image.texture=Resources.Load<Texture2D>("Arayuz/Konsol/bolge-"+no);image.raycastTarget=false;backdrop.gameObject.AddComponent<KonsolResim>();PremiumTema.SinematikPerde(p);
+        var caption=PremiumTema.Metin(p,"Etiket","GÖREV BÖLGESİ  /  "+no.ToString("00")+" – 07",.065f,.80f,.74f,.06f,23,PremiumTema.Altin,true);PremiumTema.Uyarla(caption,new Rect(.07f,.74f,.86f,.05f));
+        var title=PremiumTema.Metin(p,"Baslik",VucutHaritasi.KisaAd(no),.06f,.57f,.75f,.20f,78,Color.white,true);PremiumTema.Uyarla(title,new Rect(.07f,.59f,.86f,.14f));
+        var line=PremiumTema.Alan("AltinCizgi",p,.065f,.54f,.12f,.004f);var li=line.gameObject.AddComponent<Image>();li.color=PremiumTema.Altin;li.raycastTarget=false;PremiumTema.Uyarla(line,new Rect(.07f,.555f,.21f,.003f));
+        var label=PremiumTema.Metin(p,"GorevEtiketi","ÇIRAĞIN GÖREVİ",.065f,.445f,.72f,.05f,22,PremiumTema.Turkuaz,true);PremiumTema.Uyarla(label,new Rect(.07f,.485f,.86f,.045f));
+        var goal=PremiumTema.Metin(p,"Gorev",GorevBilgisi.Hedef(no),.065f,.30f,.56f,.14f,32,Color.white,true);PremiumTema.Uyarla(goal,new Rect(.07f,.365f,.86f,.115f));
+        var note=PremiumTema.Metin(p,"Dikkat",GorevBilgisi.Dikkat(no),.065f,.24f,.60f,.08f,25,PremiumTema.Soluk);PremiumTema.Uyarla(note,new Rect(.07f,.265f,.86f,.085f));
+        var controls=PremiumTema.Metin(p,"Kontrol",GorevBilgisi.Kontrol(no),.065f,.165f,.80f,.05f,20,PremiumTema.Soluk);PremiumTema.Uyarla(controls,new Rect(.07f,.155f,.86f,.07f));
+        var map=PremiumTema.Dugme(p,"GorevHaritasi","Neredeyim?",.065f,.025f,.24f,.12f);PremiumTema.Uyarla(map,new Rect(.07f,.05f,.32f,.075f));gorevDugmeleri.Ekle(map,()=>HaritaIstendi=true);
+        var start=PremiumTema.Dugme(p,"GoreveBasla",no==5?"Keşfe başla  ›":"Göreve başla  ›",.33f,.025f,.32f,.12f,true);PremiumTema.Uyarla(start,new Rect(.42f,.05f,.51f,.075f));gorevDugmeleri.Ekle(start,basla);
+        p.gameObject.AddComponent<KonsolAcilis>();title.transform.parent.gameObject.AddComponent<SinematikBaslikHareketi>();
+        GorevGuncelle(GorevBilgisi.Hedef(no));
     }
-
-    // Köpük düğmesinin üstündeki yazı (ör. kalpte "ATIL")
-    public void AtesEtiketi(string yazi) => atesYazisi.text = yazi;
-
-    // Sol üstteki gösterge (mikrop sayısı, kalkan, kalan yol...). vurgu: kısa bir büyüyüp küçülme.
-    public void Gosterge(string metin, bool vurgu = false)
-    {
-        sayac.text = metin;
-        if (vurgu) StartCoroutine(SayacVurgusu());
+    public void GorevGizle(){if(gorevPaneli!=null)gorevPaneli.SetActive(false);}
+    public void GorevGuncelle(string t){GorevMetni=t;gorevSeridi.text=t;}
+    public void Kontroller(bool acik)=>kontrollerAcik=acik;
+    public void DalisDugmesi(bool on){dalisVar=on;dalisDugmesi.SetActive(on);DokunmatikGirdi.dalisAlani=on ? p=>RectTransformUtility.RectangleContainsScreenPoint(dalisAlan,p,null) : (Func<Vector2,bool>)null;}
+    public void AtesEtiketi(string text)=>atesYazisi.text=text;
+    public void CanGuncelle(float value){float v=Mathf.Clamp01(value/100f);canMetin.text="CAN  "+Mathf.CeilToInt(value)+" / 100";canDolgu.anchorMax=new Vector2(.02f+.96f*v,.88f);canResim.color=v>.5f?PremiumTema.Turkuaz:v>.25f?PremiumTema.Altin:new Color(1,.30f,.27f);}
+    public void HasarGoster(string reason,int amount){hasarMetin.text="−"+amount+" CAN  ·  "+reason;hasarSure=1.2f;}
+    public void TelsiziKapat(){kuyruk.Clear();if(akis!=null)StopCoroutine(akis);akis=null;telsizKutu.SetActive(false);}
+    public void Gosterge(string text,bool vurgu=false){sayac.text=text;}
+    public void Ipucu(string text)=>ipucu.text=text;
+    public void Perde(float a)=>karartma.color=new Color(0,0,0,a);
+    public void HedefIsareti(Vector2? p){hedefIsareti.gameObject.SetActive(p.HasValue);if(p.HasValue){hedefIsareti.anchorMin=hedefIsareti.anchorMax=p.Value;hedefIsareti.sizeDelta=new Vector2(22,22);}}
+    public void KartGoster(string title,string body,string alt){
+        kartBaslik.text=title.Replace("VÜCUT KARTI: ","");var lines=body.Split(new[]{'•'},StringSplitOptions.RemoveEmptyEntries);
+        for(int i=0;i<3;i++)bilgiler[i].text=i<lines.Length?lines[i].Trim():"";
+        KartAltYazi(alt);kart.SetActive(true);kart.transform.SetAsLastSibling();
     }
-
-    // Sağ üstteki kontrol ipucu (yalnızca klavyeyle oynarken görünür)
-    public void Ipucu(string metin) => ipucu.text = metin;
-
-    IEnumerator SayacVurgusu()
-    {
-        var panel = sayac.transform.parent;
-        for (float t = 0f; t < 1f; t += Time.deltaTime / 0.3f)
-        {
-            panel.localScale = Vector3.one * (1f + 0.28f * Mathf.Sin(Mathf.PI * t));
-            yield return null;
-        }
-        panel.localScale = Vector3.one;
+    public void KartAltYazi(string text){kartAlt.text=string.IsNullOrEmpty(text)?"Kart hazırlanıyor…":"Koleksiyonuna eklendi.";kartDevam.gameObject.SetActive(!string.IsNullOrEmpty(text));}
+    public void KartGizle()=>kart.SetActive(false);
+    public void OrtaYazi(string text)=>ortaYazi.text=text;
+    public void BitisDugmeleri(Action devam,Action tekrar,Action menu,string label="Devam"){
+        var parent=bitisDugmeleri.transform;var items=new List<(string text,Action action)>();
+        if(devam!=null)items.Add((label,devam));if(tekrar!=null)items.Add(("Tekrar dene",tekrar));if(menu!=null)items.Add(("Ana menü",menu));
+        for(int i=0;i<items.Count;i++){float w=(.86f-.025f*(items.Count-1))/items.Count;var button=PremiumTema.Dugme(parent,"Sonuc"+i,items[i].text,.07f+i*(w+.025f),.08f,w,.13f,i==0);PremiumTema.Uyarla(button,new Rect(.07f,.07f+(items.Count-1-i)*.11f,.86f,.095f));sonDugmeleri.Ekle(button,items[i].action);}
+        bitisDugmeleri.SetActive(true);bitisDugmeleri.transform.SetAsLastSibling();
     }
-
-    // Ekranı kısmen karartır (başlangıç ve duraklatma ekranları). 0 = açık.
-    public void Perde(float alfa) => karartma.color = new Color(0f, 0f, 0f, alfa);
-
-    // Hedef işaretini ekran oranı (0..1) cinsinden bir noktaya koyar; null ise gizler.
-    public void HedefIsareti(Vector2? ekranOrani)
-    {
-        hedefIsareti.gameObject.SetActive(ekranOrani.HasValue);
-        if (!ekranOrani.HasValue) return;
-        hedefIsareti.anchorMin = hedefIsareti.anchorMax = ekranOrani.Value;
-        hedefIsareti.localScale = Vector3.one * (1f + 0.25f * Mathf.Sin(Time.unscaledTime * 6f));
-    }
-
-    // Profesörün telsiz mesajı. Öncelikli mesaj, bekleyenleri silip hemen gösterilir.
+    void OnDestroy(){DokunmatikGirdi.digerDugme=null;DokunmatikGirdi.dalisAlani=null;}
     public void Telsiz(string mesaj, bool oncelikli = false)
     {
         if (oncelikli)
@@ -258,19 +181,6 @@ public class Arayuz : MonoBehaviour
         if (akis == null) akis = StartCoroutine(TelsizAkisi());
     }
 
-    public void KartGoster(string baslik, string govde, string alt)
-    {
-        kartBaslik.text = baslik;
-        kartGovde.text = govde;
-        kartAlt.text = alt;
-        kart.SetActive(true);
-    }
-
-    public void KartAltYazi(string alt) => kartAlt.text = alt;
-
-    public void KartGizle() => kart.SetActive(false);
-
-    // Ekranı verilen renge (varsayılan siyah) kapatır.
     public IEnumerator Karart(float sure, Color? renk = null)
     {
         Color bas = karartma.color;
@@ -296,26 +206,10 @@ public class Arayuz : MonoBehaviour
         karartma.color = Color.clear;
     }
 
-    public void OrtaYazi(string metin) => ortaYazi.text = metin;
-
-    // Bölüm sonu düğmeleri. İşi null olan düğme gösterilmez.
-    public void BitisDugmeleri(Action devam, Action tekrar, Action menu, string devamEtiketi = "DEVAM")
-    {
-        devamIsi = devam;
-        tekrarIsi = tekrar;
-        menuIsi = menu;
-        devamYazisi.text = devamEtiketi;
-        devamDugmesi.gameObject.SetActive(devam != null);
-        tekrarDugmesi.gameObject.SetActive(tekrar != null);
-        menuDugmesi.gameObject.SetActive(menu != null);
-        bitisDugmeleri.SetActive(true);
-    }
-
-    // ---------- İç işleyiş ----------
-
     IEnumerator TelsizAkisi()
     {
-        telsizKutu.SetActive(true);
+        // Sürüş sırasında açıklama kutusu açılmaz; varsa anlatım yalnızca ses olarak sürer.
+        telsizKutu.SetActive(false);
         while (kuyruk.Count > 0)
         {
             string mesaj = kuyruk.Dequeue();

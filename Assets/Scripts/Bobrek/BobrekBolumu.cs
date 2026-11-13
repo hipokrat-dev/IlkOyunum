@@ -190,6 +190,7 @@ public class BobrekBolumu : AkisBolumu
         {
             yumakAnlatildi = true;
             arayuz.Gosterge("Glomerulus");
+            arayuz.GorevGuncelle("Süzülme bölgesini geçerek nefron kanalına gir.");
             arayuz.Telsiz("Bu kılcal damar yumağına glomerulus denir: böbreğin süzgeci. Kan basıncı sıvıyı incecik deliklerden iter!", true);
         }
 
@@ -202,6 +203,7 @@ public class BobrekBolumu : AkisBolumu
             kamera.sarsinti = 0.3f;
             Ses.Cal(Ses.Tur.Yutkunma, 0.9f, 1.3f);
             arayuz.Gosterge($"Geri emilim: 0 / {yararliToplam}");
+            arayuz.GorevGuncelle("Su, glikoz ve tuzu topla; kahverengi ve mor atıklardan kaçın.");
             arayuz.Telsiz("Süzüldün! Alyuvarlar ve proteinler geçemeyecek kadar büyük; onlar kanda kaldı.", true);
         }
         if (suzuldu)
@@ -264,6 +266,8 @@ public class BobrekBolumu : AkisBolumu
             else
             {
                 atikHatasi++;
+                HasarAl(15,"Zararlı atık");
+                if(Can<=0)return;
                 kamera.sarsinti = 0.18f;
                 Ses.Cal(Ses.Tur.Carpma, 0.8f);
                 if (!atikAnlatildi)

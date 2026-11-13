@@ -430,8 +430,8 @@ static class BolumTesti
         {
             case 0: Sonra(1, t, 1); break;
             // Ekrana dokunup oyunu başlat
-            case 1: Dokun(1, UnityEngine.InputSystem.TouchPhase.Began, 0.5f, 0.5f); Sonra(0.2, t, 2); break;
-            case 2: Dokun(1, UnityEngine.InputSystem.TouchPhase.Ended, 0.5f, 0.5f); Sonra(0.5, t, 3); break;
+            case 1: Dokun(1, UnityEngine.InputSystem.TouchPhase.Began, 0.5f, 0.15f); Sonra(0.2, t, 2); break;
+            case 2: Dokun(1, UnityEngine.InputSystem.TouchPhase.Ended, 0.5f, 0.15f); Sonra(0.5, t, 3); break;
             case 3:
                 if (b.DurumAdi != "Oyun") Debug.LogError("DOKUNMATIK: dokunma oyunu başlatmadı");
                 ilkZ = GameObject.Find("Arac").transform.position.z;

@@ -1,0 +1,57 @@
+{
+  "project": "/Users/gokhanyener/ilkoyunum",
+  "date": "2026-11-13",
+  "changes": [
+    "Sade ana menü: sırayla oyna ve serbest bölüm seç",
+    "Yedi bölge kilitsiz",
+    "Kartsız, animasyonlu sinematik görev başlıkları",
+    "Fotogerçekçi anatomik atlas ve duraklatmada çalışan konum ışığı",
+    "100 can; yiyecek18, tükürük20, asit12/0.75sn, zararlı atık15, kapak18",
+    "Can sıfırında görev durur, tekrar dene / ana menü",
+    "Sürüşte otomatik bilgi kutuları kapalı",
+    "Ctrl/Command köpük, ağızda Space zıplama; mobilde ayrı düğmeler",
+    "Bouncy Adventure streaming müzik; sinematiklerde ortama uygun SFX"
+  ],
+  "validation": {
+    "comprehensivePlayModeErrors": 0,
+    "layouts": [
+      "1920x1080",
+      "2400x1080",
+      "1600x1200",
+      "1080x1920",
+      "1080x2400"
+    ],
+    "observedFoodHealth": "100 -> 82",
+    "observedSalivaHealth": "100 -> 80",
+    "observedAcid": "82 -> 0, Kaybetti",
+    "pulseWhenPaused": {
+      "timeScale": 0,
+      "alphaSamples": [
+        0.253830552,
+        0.296271533
+      ]
+    },
+    "drivingInfoBoxActive": false,
+    "musicClip": "BouncyAdventure",
+    "musicLoadType": "Streaming",
+    "physicalAndroidTest": false,
+    "latestFocusedChecks": {
+      "drivingPopupHidden": true,
+      "musicStreaming": true,
+      "noCompileErrors": true,
+      "cinematicMissionLayout": "final renders/gorev-son files",
+      "drivingLayout": "final renders/surus-son files"
+    }
+  },
+  "build": {
+    "result": "succeeded",
+    "errors": 0,
+    "warnings": 6,
+    "warningKind": "Deprecated Unity API usage",
+    "apkMiB": 115.0,
+    "architecture": "ARM64",
+    "zipIntegrity": "passed",
+    "sha256": "39cb4fd4f627aab1bf811b6f590e1d37952ec29b89db76838124069953ffb56d"
+  },
+  "buildJob": "build-516715d165"
+}

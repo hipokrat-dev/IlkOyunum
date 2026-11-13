@@ -65,7 +65,7 @@ public class BagirsakBolumu : BolumTemeli
         RenderSettings.fogDensity = 0.014f;
 
         arac = AracKontrol.Olustur(yol[BaslangicIndeksi] + Vector3.up * 0.2f);
-        arac.transform.rotation = Quaternion.LookRotation(Teget(BaslangicIndeksi));
+        arac.Isinla(arac.transform.position, Quaternion.LookRotation(Teget(BaslangicIndeksi)));
         yakinIndeks = BaslangicIndeksi;
         kamera = TakipKamera.Olustur(arac.transform, new Color(0.05f, 0.02f, 0.012f));
         kamera.sinir = KameraSiniri;
@@ -93,7 +93,7 @@ public class BagirsakBolumu : BolumTemeli
     void TuneliKur()
     {
         // Kemerli tünel duvarı (içinden bakılır)
-        var kemer = Sekil.Parametrik(YolAdet - 1, 20, true, (fu, fv) =>
+        var kemer = Sekil.Parametrik(YolAdet - 1, 20, false, (fu, fv) =>
         {
             int i = Mathf.RoundToInt(fu * (YolAdet - 1));
             float a = fv * Mathf.PI;
@@ -168,7 +168,7 @@ public class BagirsakBolumu : BolumTemeli
             mukoza.GetTexture("_BumpMap") as Texture2D, null, 0.65f, 1f, 0.7f);
         malzeme.SetColor("_BaseColor", new Color(1f, 0.7f, 0.62f));
 
-        for (int i = 2; i < YolAdet - 2; i += 2)
+        for (int i = 2; i < YolAdet - 2; i += MobilKalite.Mobil ? 4 : 2)
         {
             foreach (float taraf in new[] { -1f, 1f })
             {

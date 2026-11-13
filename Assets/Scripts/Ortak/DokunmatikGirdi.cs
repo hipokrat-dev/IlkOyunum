@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
@@ -23,6 +24,7 @@ public static class DokunmatikGirdi
     public static Func<Vector2, bool> dalisAlani;            // dalış düğmesi gösteriliyorsa: bu nokta onun üstünde mi
     public static Func<Vector2, bool> digerDugme;            // başka bir ekran düğmesinin üstünde mi (köpük sayılmasın)
 
+    static readonly HashSet<int> uiParmaklari = new HashSet<int>();
     static int cubukParmak = -1, sonKare = -1;
 
     // Karede bir kez çalışır; kaç yerden çağrılırsa çağrılsın aynı sonucu verir.
@@ -35,7 +37,7 @@ public static class DokunmatikGirdi
         Ates = Dalis = DokunmaBasladi = false;
         bool cubukBulundu = false;
         var dokunuslar = Touch.activeTouches;
-        if (dokunuslar.Count > 0 || Application.isMobilePlatform) Etkin = true;
+        if (dokunuslar.Count > 0 || MobilKalite.Mobil) Etkin = true;
 
         float cubukMenzili = Mathf.Max(60f, Screen.height * 0.13f);
         foreach (Touch d in dokunuslar)
@@ -48,6 +50,9 @@ public static class DokunmatikGirdi
                 DokunmaBasladi = true;
                 DokunmaYeri = p;
             }
+
+            if(basladi && digerDugme!=null && digerDugme(p))uiParmaklari.Add(d.touchId);
+            if(uiParmaklari.Contains(d.touchId)){if(bitti)uiParmaklari.Remove(d.touchId);continue;}
 
             if (d.touchId == cubukParmak || (basladi && cubukParmak < 0 && p.x < Screen.width * 0.5f))
             {

@@ -314,6 +314,8 @@ public class KalpBolumu : BolumTemeli
             if ((a.transform.position - govde).sqrMagnitude < 2.4f * 2.4f)
             {
                 yakalanma++;
+                HasarAl(15,"Akyuvar teması");
+                if(Can<=0)return;
                 yakalanmaSuresi = 2.2f;
                 kamera.sarsinti = 0.22f;
                 Ses.Cal(Ses.Tur.Carpma);
@@ -326,6 +328,7 @@ public class KalpBolumu : BolumTemeli
         if (konum.z >= DamarL)
         {
             asama = Asama.Kulakcik;
+            arayuz.GorevGuncelle("Kapak yeşilken ATIL / BOŞLUK ile sağ karıncığa geç.");
             arac.kopukAcik = false;
             arayuz.AtesEtiketi("ATIL");
             arayuz.Ipucu("BOŞLUK: Kapak açıkken atıl    ESC: Duraklat");
@@ -403,6 +406,8 @@ public class KalpBolumu : BolumTemeli
                     atilma = 0f;
                     geriItis = 14f;
                     kacirma++;
+                    HasarAl(18,"Kapalı kapak");
+                    if(Can<=0)return;
                     kamera.sarsinti = 0.25f;
                     Ses.Cal(Ses.Tur.Carpma);
                     if (!kacirmaAnlatildi)
@@ -423,6 +428,7 @@ public class KalpBolumu : BolumTemeli
                 if (sonraki == Asama.Karincik)
                 {
                     arayuz.Gosterge("Sağ karıncık", true);
+                    arayuz.GorevGuncelle("İkinci kapağın açılmasını bekle; yeşilken atıl.");
                     arayuz.Telsiz("Sağ karıncıktasın! Karıncık kasılınca kanı akciğerlere pompalar. Sıradaki kapak karıncık kasıldığı anda açılır.", true);
                 }
                 else
@@ -430,6 +436,7 @@ public class KalpBolumu : BolumTemeli
                     arac.kopukAcik = true;
                     arayuz.AtesEtiketi("KÖPÜK");
                     arayuz.Gosterge("Akciğer atardamarı", true);
+                    arayuz.GorevGuncelle("Akışla ilerle ve akciğere ulaş.");
                     arayuz.Ipucu("WASD: Süzül    BOŞLUK: Köpük    ESC: Duraklat");
                     arayuz.Telsiz("Geçtin! Kalp günde yaklaşık 100.000 kez atar ve kanı hiç durmadan pompalar.", true);
                 }

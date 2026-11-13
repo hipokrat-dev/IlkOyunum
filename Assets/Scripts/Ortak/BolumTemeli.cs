@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 // Duraklatma, puanın kaydı ve bölümler arası geçiş de burada. Her bölüm yalnızca kendine özgü kısmı yazar.
 public abstract class BolumTemeli : MonoBehaviour
 {
-    protected enum Durum { Baslik, Oyun, Kart, Cikis, Bitti }
+    protected enum Durum { Sinematik, Baslik, Oyun, Kart, Cikis, Bitti, Kaybetti }
 
     public static BolumTemeli Ornek { get; private set; }
     public static bool kayitKapali;           // otomatik testler oyuncunun yıldızlarını değiştirmesin
@@ -22,8 +22,11 @@ public abstract class BolumTemeli : MonoBehaviour
     protected Durum durum = Durum.Baslik;
     protected float sure;                     // oyunun başından Vücut Kartı'na kadar geçen süre
 
+    public float Can {get;private set;}=100f;
+    float hasarBekleme;
     float baslangicZamani;
     bool duraklatildi, kartHazir;
+    bool haritaOncesiKontrol,haritaOncesiSes;float haritaOncesiZaman;
 
     // ---------- Bölümün tanımlaması gerekenler ----------
 
@@ -59,16 +62,26 @@ public abstract class BolumTemeli : MonoBehaviour
         RenderSettings.customReflectionTexture = Sekil.DuzKupHarita(new Color(0.16f, 0.06f, 0.06f));
 
         SahneyiKur();
+        OrganDetaylari.Kur(gameObject, BolumNo);
+        if(MobilKalite.Mobil) gameObject.AddComponent<MobilIsikButcesi>();
         kameraGozu = kamera.GetComponent<Camera>();
         arayuz = Arayuz.Olustur(transform);
+        arayuz.BolumAyarla(BolumNo);
+        arayuz.CanGuncelle(Can);
+        OyunMuzigi.Kur();
         ArayuzHazir();
 
         arac.kontrolAcik = false;
         arayuz.Perde(0.55f);
-        int enIyi = Puanli ? EnIyiYildiz(BolumNo) : 0;
-        string rekor = enIyi > 0 ? "\n<color=#FFD040><size=50>" + Yildizlar(enIyi) + "</size></color>" : "";
-        arayuz.OrtaYazi($"VÜCUT YOLCULUĞU\n<size=44>Bölüm {BolumNo}: {BolumAdi}</size>{rekor}\n\n" +
-                        "<size=34>Başlamak için ekrana dokun ya da BOŞLUK'a bas</size>");
+        if(kayitKapali) arayuz.GorevGoster(BolumNo, BolumAdi, Basla);
+        else { durum=Durum.Sinematik; StartCoroutine(Giris()); }
+    }
+
+    IEnumerator Giris()
+    {
+        yield return SinemaGiris.Oynat(SceneManager.GetActiveScene().name,transform);
+        durum=Durum.Baslik;
+        arayuz.GorevGoster(BolumNo,BolumAdi,Basla);
     }
 
     protected virtual void OnDestroy()
@@ -80,6 +93,7 @@ public abstract class BolumTemeli : MonoBehaviour
     public void Basla()
     {
         if (durum != Durum.Baslik) return;
+        arayuz.GorevGizle();
         durum = Durum.Oyun;
         baslangicZamani = Time.time;
         arac.kontrolAcik = true;
@@ -92,12 +106,17 @@ public abstract class BolumTemeli : MonoBehaviour
 
     void Update()
     {
+        if(YuklemeEkrani.Yukleniyor)return;
+        if(arayuz.HaritaAcik){arayuz.HaritaIsle();return;}
         var kb = Keyboard.current;
         var kol = Gamepad.current;
         bool dugme = arayuz.DugmeleriIsle();
+        if(arayuz.MenuIstendi){Time.timeScale=1;AudioListener.pause=false;SahneAc(AnaMenuSahnesi);return;}
+        if(arayuz.HaritaIstendi || (kb!=null && kb.hKey.wasPressedThisFrame && durum!=Durum.Sinematik && durum!=Durum.Cikis)){HaritayiAc();return;}
+        if(arayuz.DevamIstendi){Duraklat(false);return;}
         bool tus = (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) ||
                    (kol != null && kol.buttonSouth.wasPressedThisFrame);
-        bool onay = tus || (DokunmatikGirdi.DokunmaBasladi && !dugme);       // ekrana dokunmak da onaydır
+        bool onay = tus || arayuz.KartDevamIstendi;       // ekrana dokunmak da onaydır
         bool duraklatTusu = (kb != null && kb.escapeKey.wasPressedThisFrame) ||
                             (kol != null && kol.startButton.wasPressedThisFrame) || arayuz.DuraklatIstendi;
 
@@ -120,6 +139,10 @@ public abstract class BolumTemeli : MonoBehaviour
                 if (onay) KartiKapat();
                 break;
 
+            case Durum.Kaybetti:
+                if(kb!=null&&(kb.rKey.wasPressedThisFrame||kb.enterKey.wasPressedThisFrame))SahneAc(null);
+                else if(kb!=null&&kb.mKey.wasPressedThisFrame)SahneAc(AnaMenuSahnesi);
+                break;
             case Durum.Bitti:
                 // Dokunmatikte ekrandaki düğmeler kullanılır; klavyede kısayollar
                 if (tus && SonrakiVar) SahneAc(SonrakiSahne);
@@ -129,12 +152,26 @@ public abstract class BolumTemeli : MonoBehaviour
         }
     }
 
+    // Darbeler ortak bekleme süresini paylaşır; asit en fazla 0.75 saniyede bir hasar verir.
+    public bool HasarAl(float miktar,string neden,float aralik=.9f)
+    {
+        if(durum!=Durum.Oyun || duraklatildi || arayuz.HaritaAcik || Time.timeScale==0 || Time.time<hasarBekleme || miktar<=0)return false;
+        hasarBekleme=Time.time+aralik;Can=Mathf.Max(0,Can-miktar);arayuz.CanGuncelle(Can);arayuz.HasarGoster(neden,Mathf.RoundToInt(miktar));
+        kamera.sarsinti=Mathf.Max(kamera.sarsinti,.16f);
+        if(Can<=0){
+            durum=Durum.Kaybetti;arac.kontrolAcik=false;arac.Durdur();arayuz.Kontroller(false);arayuz.HedefIsareti(null);Ses.KonusmayiKes();arayuz.TelsiziKapat();
+            arayuz.Perde(.65f);arayuz.OrtaYazi("Kapsül hasar aldı\n\nCan tükendi. Bölgeyi yeniden deneyebilirsin.");
+            arayuz.BitisDugmeleri(null,()=>SahneAc(null),()=>SahneAc(AnaMenuSahnesi));
+        }
+        return true;
+    }
+
     public const string AnaMenuSahnesi = "AnaMenu";
 
     static bool MenuVar => Application.CanStreamedLevelBeLoaded(AnaMenuSahnesi);
 
     // null: bu bölümü yeniden yükle
-    static void SahneAc(string sahne) => SceneManager.LoadScene(sahne ?? SceneManager.GetActiveScene().name);
+    static void SahneAc(string sahne) => YuklemeEkrani.Ac(sahne ?? SceneManager.GetActiveScene().name);
 
     bool SonrakiVar => !string.IsNullOrEmpty(SonrakiSahne) && Application.CanStreamedLevelBeLoaded(SonrakiSahne);
 
@@ -144,7 +181,16 @@ public abstract class BolumTemeli : MonoBehaviour
         Time.timeScale = dur ? 0f : 1f;
         AudioListener.pause = dur;
         arayuz.Perde(dur ? 0.55f : 0f);
-        arayuz.OrtaYazi(dur ? "DURAKLATILDI\n\n<size=34>Devam etmek için ekrana dokun ya da ESC'ye bas</size>" : "");
+        arayuz.DuraklatGoster(dur);
+        arac.kontrolAcik=!dur;
+    }
+
+    public void HaritayiAc()
+    {
+        if(arayuz.HaritaAcik || durum==Durum.Sinematik || durum==Durum.Cikis)return;
+        haritaOncesiKontrol=arac.kontrolAcik;haritaOncesiSes=AudioListener.pause;haritaOncesiZaman=Time.timeScale;
+        arac.kontrolAcik=false;Time.timeScale=0;AudioListener.pause=true;arayuz.Kontroller(false);
+        arayuz.HaritayiAc(()=>{Time.timeScale=haritaOncesiZaman;AudioListener.pause=haritaOncesiSes;arac.kontrolAcik=haritaOncesiKontrol;});
     }
 
     // Bölümün hedefi tamamlanınca çağrılır: tebrik, Vücut Kartı ve bölüm sonu akışını başlatır.
@@ -231,7 +277,7 @@ public abstract class BolumTemeli : MonoBehaviour
         sonda.size = boyut;
         sonda.mode = ReflectionProbeMode.Realtime;
         sonda.refreshMode = ReflectionProbeRefreshMode.ViaScripting;
-        sonda.timeSlicingMode = ReflectionProbeTimeSlicingMode.NoTimeSlicing;
+        sonda.timeSlicingMode = ReflectionProbeTimeSlicingMode.IndividualFaces;
         sonda.resolution = 128;
         sonda.hdr = true;
         sonda.RenderProbe();

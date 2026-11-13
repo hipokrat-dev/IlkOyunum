@@ -21,9 +21,9 @@ static class Derleme
         var lit = Shader.Find("Universal Render Pipeline/Lit");
         Directory.CreateDirectory(SablonKlasoru);
         var beyaz = Texture2D.whiteTexture;
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < 32; i++)
         {
-            bool saydam = (i & 1) != 0, normal = (i & 2) != 0, isilti = (i & 4) != 0, golge = (i & 8) != 0;
+            bool saydam = (i & 1) != 0, normal = (i & 2) != 0, isilti = (i & 4) != 0, golge = (i & 8) != 0, islaklik = (i & 16) != 0;
             string yol = $"{SablonKlasoru}/Sablon_{i:00}.mat";
             var m = AssetDatabase.LoadAssetAtPath<Material>(yol);
             if (m == null)
@@ -59,6 +59,12 @@ static class Derleme
                 m.SetTexture("_OcclusionMap", beyaz);
                 m.EnableKeyword("_OCCLUSIONMAP");
             }
+            if (islaklik)
+            {
+                m.SetTexture("_MetallicGlossMap", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Resources/AgizV2/dil_mask.png"));
+                m.EnableKeyword("_METALLICSPECGLOSSMAP");
+            }
+            m.enableInstancing = true;
             EditorUtility.SetDirty(m);
         }
         AssetDatabase.SaveAssets();

@@ -19,7 +19,7 @@ public class Kristal : MonoBehaviour, IKopukHedefi
         {
             Vector3 yer = Random.insideUnitSphere * 0.55f;
             yer.y = Mathf.Abs(yer.y) * 0.8f;
-            Sekil.MeshParca(diken, "Parca", g.transform, yer, Vector3.one * Random.Range(0.55f, 0.95f), malzeme, Random.rotation);
+            Sekil.MeshParca(diken, "Parca", g.transform, yer, Vector3.one * Random.Range(0.55f, 0.95f), malzeme, Quaternion.Euler(Random.Range(-30f,30f), Random.Range(0f,360f), Random.Range(-30f,30f)));
         }
         g.AddComponent<SphereCollider>().radius = 1.15f;
         var k = g.AddComponent<Kristal>();

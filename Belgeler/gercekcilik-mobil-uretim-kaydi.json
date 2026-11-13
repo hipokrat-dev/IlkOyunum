@@ -1,0 +1,38 @@
+{
+  "project": "/Users/gokhanyener/ilkoyunum",
+  "date": "2026-11-13",
+  "image_generation": {
+    "tool": "built-in image_gen",
+    "asset": "/Users/gokhanyener/ilkoyunum/Assets/Resources/Gercekci/dil-gercekci.png",
+    "prompt": "Use case: photorealistic-natural. Asset type: seamless square PBR base color texture for a Unity microscopic exploration game. Flat orthographic close-up of healthy human dorsal tongue mucosa, realistic densely packed very fine filiform papillae with sparse slightly larger pink fungiform papillae. Warm muted rose coral pink living tissue, subtle natural color variation, delicate detail. Uniform scale over entire square, seamlessly tileable on all four edges. Diffuse cross-polarized even lighting, no baked shadows or highlights, no perspective, no distinct central feature or groove, no large lumps, no teeth, no mouth silhouette, no objects, no text. The surface should appear soft and delicate, not gravel, stone, reptile scales or rough meat. 1024 square texture."
+  },
+  "changes": [
+    "Dil, diş eti ve mine malzemeleri yeniden dengelendi; yeni dil dokusu.",
+    "Damak kıvrımları, küçük dil ve damak yayları eklendi.",
+    "Ağız kamerası alçaltıldı; yumuşatılan kameranın da sınırlar içinde kalması sağlandı.",
+    "Araç camı, far ve tüm bölümlerin ton/parlama ayarları yenilendi.",
+    "Ağız, araç ve akciğer modellerinin hafif mobil kopyaları üretildi; özgün modeller korundu.",
+    "Bağırsak tünel yüzleri ve ilk araç yönü düzeltildi; mobil dekor yoğunluğu azaltıldı.",
+    "Mobilde çevre ışıkları en yakın dört ışıkla sınırlandı.",
+    "3B çözünürlük ölçülen kare süresine göre uyarlanır; arayüz yerel çözünürlükte.",
+    "Sahnelerde üretilen mesh/materyal ve kamera profilleri sahne kapanışında temizlenir."
+  ],
+  "validation": {
+    "seven_scene_intro_and_visual_test": "passed, errors=0; 1920x1080 / 2400x1080 / 1600x1200",
+    "mobile_mesh_bounds": "passed against source meshes",
+    "touch_input": "passed, driving and foam verified",
+    "mouth_gameplay": "passed, completed, errors=0",
+    "intestine_gameplay": "passed, completed, errors=0; automated driver rescued 4/5 colonies",
+    "apk": {
+      "result": "Succeeded",
+      "errors": 0,
+      "file": "/Users/gokhanyener/ilkoyunum/Derlemeler/VucutYolculugu.apk",
+      "size_mb": 107.2,
+      "sha256": "c83bd0a5689ba871203e1599a8ec794ce9d3b60fd95688496f41e7fe98e4a516",
+      "zip_integrity": "OK",
+      "architecture": "ARM64"
+    },
+    "device_testing": "No Android device connected; FPS/thermal/battery measurements not performed.",
+    "final_mouth_intestine_visual": "passed, errors=0 across three aspect ratios"
+  }
+}

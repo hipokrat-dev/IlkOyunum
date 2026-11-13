@@ -74,12 +74,12 @@ public class AkcigerBolumu : BolumTemeli
 
         // Alveol kümeleri (Blender: Araclar/blender/akciger_modelleri.py)
         var alveol = Sekil.DokuluMalzeme(Resources.Load<Texture2D>("Akciger/alveol_albedo"),
-            Resources.Load<Texture2D>("Akciger/alveol_normal"), null, 0.72f, 2f, 1f);
+            Resources.Load<Texture2D>("Akciger/alveol_normal"), null, 0.55f, 2f, 0.25f);
         Sekil.Isilda(alveol, new Color(0.1f, 0.035f, 0.035f));        // ince duvardan sızan ışık hissi
-        var modeller = new List<Mesh>(Resources.LoadAll<Mesh>("Akciger/AkcigerModelleri"));
+        var modeller = new List<Mesh>(Resources.LoadAll<Mesh>(MobilKalite.Mobil ? "Mobil/AkcigerModelleri" : "Akciger/AkcigerModelleri"));
         if (modeller.Count == 0) Debug.LogError("Alveol modelleri bulunamadı: Resources/Akciger/AkcigerModelleri");
 
-        float aralik = Application.isMobilePlatform ? 4.2f : 2.6f;      // tablette daha az küme
+        float aralik = MobilKalite.Mobil ? 4.2f : 2.6f;      // tablette daha az küme
         for (float ks = 52f; ks < 208f; ks += aralik)
         {
             // Yolun çevresinde, sapı dışarıda ve kesecikleri yola dönük

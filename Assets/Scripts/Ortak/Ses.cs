@@ -24,13 +24,15 @@ public class Ses : MonoBehaviour
         }
     }
 
+    public static bool Konusuyor => ornek!=null && ornek.konusma!=null && ornek.konusma.isPlaying;
+
     // ---------- Dışarıya açık işlevler ----------
 
     public static void Cal(Tur tur, float siddet = 1f, float perde = 1f)
     {
         var s = Ornek;
         s.tekSes.pitch = perde;
-        s.tekSes.PlayOneShot(s.klipler[tur], siddet);
+        s.tekSes.PlayOneShot(s.klipler[tur], siddet * (tur == Tur.Kopuk ? .55f : 1f));
     }
 
     // Motor uğultusu: 0 (rölanti) .. 1 (tam hız)
@@ -48,8 +50,10 @@ public class Ses : MonoBehaviour
     {
         var s = Ornek;
         s.konusma.Stop();
+        if (klip == null) return;
         s.konusma.clip = klip;
-        s.konusma.Play();
+        // Kaynak ses düzeyi zaten 1: konuşmayı az yükseltmek için klip kazancı.
+        s.konusma.PlayOneShot(klip, 1.12f);
     }
 
     public static void KonusmayiKes()

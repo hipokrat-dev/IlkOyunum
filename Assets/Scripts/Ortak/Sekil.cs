@@ -15,13 +15,14 @@ public static class Sekil
     {
         if (sablon == null)
         {
-            // Projenin varsayılan (URP Lit) malzemesini şablon olarak al.
-            var gecici = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            sablon = gecici.GetComponent<Renderer>().sharedMaterial;
-            UnityEngine.Object.Destroy(gecici);
+            // Primitive'ın editör varsayılanı Player'da URP malzemesi değildir.
+            // Resources referansı hem malzemeyi hem Lit shader'ını APK'ya taşır.
+            sablon = Resources.Load<Material>("Malzemeler/Sablon_00");
+            if (sablon == null || sablon.shader == null || sablon.shader.name != "Universal Render Pipeline/Lit")
+                throw new InvalidOperationException("URP malzeme şablonu eksik: Resources/Malzemeler/Sablon_00");
         }
 
-        var m = new Material(sablon) { color = renk };
+        var m = new Material(sablon) { color = renk, enableInstancing = true };
         if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", renk);
         if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", puruzsuzluk);
         if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", metalik);
@@ -46,7 +47,7 @@ public static class Sekil
             m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
             m.renderQueue = (int)RenderQueue.Transparent;
         }
-        return m;
+        return SahneVarliklari.Kaydet(m);
     }
 
     // Blender'da pişirilmiş dokularla (renk, normal, ortam gölgesi) malzeme.
@@ -62,7 +63,7 @@ public static class Sekil
             m.SetFloat("_OcclusionStrength", 1f);
             m.EnableKeyword("_OCCLUSIONMAP");
         }
-        return m;
+        return SahneVarliklari.Kaydet(m);
     }
 
     // Tek renkli yansıma haritası (gökyüzü yerine).
@@ -73,7 +74,7 @@ public static class Sekil
         for (int i = 0; i < pikseller.Length; i++) pikseller[i] = renk;
         for (int yuz = 0; yuz < 6; yuz++) harita.SetPixels(pikseller, (CubemapFace)yuz);
         harita.Apply();
-        return harita;
+        return SahneVarliklari.Kaydet(harita);
     }
 
     public static void Isilda(Material m, Color isik)
@@ -239,7 +240,7 @@ public static class Sekil
         mesh.RecalculateNormals();
         mesh.RecalculateTangents();
         mesh.RecalculateBounds();
-        return mesh;
+        return SahneVarliklari.Kaydet(mesh);
     }
 
     static float Us(float deger, float us) => Mathf.Sign(deger) * Mathf.Pow(Mathf.Abs(deger), us);

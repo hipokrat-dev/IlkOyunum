@@ -1,0 +1,16 @@
+AGIZ_V2 errors=0
+PASS 10 hedef, 100 can
+PASS 32 dis icin LOD
+PASS 3 azalan ayrinti seviyesi
+PASS PBR doku setleri ve shader
+Editor render observation triangles=267628 drawCalls=126 setPass=54
+PASS yeni giris yonunde surus
+PASS tukurukten yuksek ziplama
+PASS dil zeminine inis
+PASS ziplama dalga hasarini onler
+PASS yerde dalga 20 can azaltir
+PASS ctrl kopuk
+PASS kopuk yeni dislerin yanindaki hedefe ulasir
+PASS dis ve cene carpismalari
+PASS neredeyim ve duraklama
+PASS 10 koloni sonrasi bolum ilerler

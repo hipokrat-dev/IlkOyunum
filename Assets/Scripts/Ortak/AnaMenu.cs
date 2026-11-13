@@ -18,143 +18,70 @@ public class AnaMenu : MonoBehaviour
     Vector2Int sonEkran;
     int kartSirasi;
 
+    GameObject anaIcerik;
+    VucutHaritasi harita;Text muzikEtiketi;
+    readonly DugmeListesi anaDugmeler = new DugmeListesi();
+    readonly DugmeListesi bolumDugmeleri = new DugmeListesi();
+    readonly DugmeListesi kartDugmeleri = new DugmeListesi();
+
     void Awake()
     {
-        Time.timeScale = 1f;
-        AudioListener.pause = false;
-
-        var kamera = new GameObject("Kamera") { tag = "MainCamera" }.AddComponent<Camera>();
-        kamera.clearFlags = CameraClearFlags.SolidColor;
-        kamera.backgroundColor = new Color(0.03f, 0.04f, 0.08f);
+        OyunMuzigi.Kur();
+        Time.timeScale=1f; AudioListener.pause=false;
+        var kamera=new GameObject("Kamera") { tag="MainCamera" }.AddComponent<Camera>();
+        kamera.clearFlags=CameraClearFlags.SolidColor; kamera.backgroundColor=PremiumTema.Gece;
         kamera.gameObject.AddComponent<AudioListener>();
-
-        var tuval = Cizim.Tuval("Menu", transform, out guvenli);
-        ArkaPlaniKur(tuval.transform);
-
-        var baslik = Cizim.Yazi("Baslik", guvenli, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -40f), new Vector2(0f, 130f), 100, TextAnchor.MiddleCenter, Color.white);
-        baslik.text = "VÜCUT YOLCULUĞU";
-        baslik.fontStyle = FontStyle.Bold;
-        baslik.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(4f, -4f);
-        var altBaslik = Cizim.Yazi("AltBaslik", guvenli, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -165f), new Vector2(0f, 50f), 34, TextAnchor.MiddleCenter, new Color(1f, 0.9f, 0.75f));
-        altBaslik.text = "Profesör ve afacan çırağıyla insan vücudunun içine yolculuk";
-        altBaslik.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(2f, -2f);
-
-        // Alt sıra: oyna, bölümler, kartlar
-        var yesil = new Color(0.13f, 0.55f, 0.3f, 0.95f);
-        var mavi = new Color(0.1f, 0.22f, 0.46f, 0.95f);
-        var turuncu = new Color(0.75f, 0.42f, 0.08f, 0.95f);
-        int siradaki = SiradakiBolum();
-        string oynaYazisi = siradaki == 0 ? "OYNA" : $"DEVAM ET  (Bölüm {BolumListesi.Tumu[siradaki].no})";
-        dugmeler.Ekle(Cizim.Dugme("Oyna", guvenli, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-480f, 60f),
-            new Vector2(440f, 110f), oynaYazisi, 40, yesil, out _), () => BolumuAc(BolumListesi.Tumu[siradaki].sahne));
-        dugmeler.Ekle(Cizim.Dugme("Bolumler", guvenli, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 60f),
-            new Vector2(440f, 110f), "BÖLÜMLER", 40, mavi, out _), () => bolumPaneli.SetActive(true));
-        dugmeler.Ekle(Cizim.Dugme("Kartlar", guvenli, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(480f, 60f),
-            new Vector2(440f, 110f), "VÜCUT KARTLARI", 40, turuncu, out _), KartlariAc);
-
-        BolumPaneliniKur();
-        KartPaneliniKur();
+        var tuval=Cizim.Tuval("Menu",transform,out guvenli);
+        PremiumTema.ArkaPlan(tuval.transform);
+        guvenli.SetAsLastSibling();
+        var home=PremiumTema.Alan("AnaIcerik",guvenli,0,0,1,1); anaIcerik=home.gameObject;
+        var marka=PremiumTema.Metin(home,"Marka","BİR MİKRO DÜNYA MACERASI",.055f,.83f,.65f,.055f,22,PremiumTema.Turkuaz,true);PremiumTema.Uyarla(marka,new Rect(.07f,.88f,.86f,.05f));
+        var title=PremiumTema.Metin(home,"Baslik","VÜCUT\nYOLCULUĞU",.05f,.45f,.70f,.35f,84,Color.white,true);PremiumTema.Uyarla(title,new Rect(.07f,.67f,.88f,.20f));
+        var sub=PremiumTema.Metin(home,"AltBaslik","Rotanı seç. Keşfe başla.",.055f,.32f,.65f,.08f,28,PremiumTema.Soluk);PremiumTema.Uyarla(sub,new Rect(.07f,.55f,.86f,.06f));
+        int siradaki=SiradakiBolum();var b=BolumListesi.Tumu[siradaki];
+        var ordered=PremiumTema.Dugme(home,"SiraylaOyna","Sırayla oyna  ›",.055f,.13f,.27f,.12f,true);PremiumTema.Uyarla(ordered,new Rect(.07f,.245f,.86f,.085f));anaDugmeler.Ekle(ordered,()=>BolumuAc(b.sahne));
+        var choose=PremiumTema.Dugme(home,"Bolumler","Bölüm seç",.35f,.13f,.24f,.12f);PremiumTema.Uyarla(choose,new Rect(.07f,.135f,.86f,.085f));anaDugmeler.Ekle(choose,()=>PanelAc(bolumPaneli));
+        var archive=PremiumTema.Dugme(home,"Kartlar","Keşif kartları",.055f,.035f,.22f,.07f);PremiumTema.Uyarla(archive,new Rect(.07f,.04f,.42f,.065f));anaDugmeler.Ekle(archive,KartlariAc);
+        var music=PremiumTema.Dugme(home,"Muzik","Müzik: "+(OyunMuzigi.Acik?"Açık":"Kapalı"),.79f,.88f,.165f,.08f);PremiumTema.Uyarla(music,new Rect(.52f,.04f,.41f,.065f));muzikEtiketi=music.GetComponentInChildren<Text>();anaDugmeler.Ekle(music,()=>{OyunMuzigi.Degistir();muzikEtiketi.text="Müzik: "+(OyunMuzigi.Acik?"Açık":"Kapalı");});
+        BolumPaneliniKur(); KartPaneliniKur();harita=VucutHaritasi.Olustur(guvenli);
     }
-
-    // Henüz bitirilmemiş ilk bölümün sırası (hepsi bittiyse 0)
     static int SiradakiBolum()
     {
-        for (int i = 0; i < BolumListesi.Tumu.Length; i++)
-        {
-            if (PlayerPrefs.GetInt("bitti_" + BolumListesi.Tumu[i].no, 0) == 0) return i;
-        }
+        for(int i=0;i<BolumListesi.Tumu.Length;i++)if(PlayerPrefs.GetInt("bitti_"+BolumListesi.Tumu[i].no,0)==0)return i;
         return 0;
     }
-
-    // Arka plan: kadın profesör ve afacan çırağının laboratuvardaki görseli.
-    // Görsel her en-boy oranında ekranı tamamen kaplar (kenarlarda boşluk kalmaz).
-    void ArkaPlaniKur(Transform tuval)
+    void PanelAc(GameObject panel){anaIcerik.SetActive(false);panel.SetActive(true);}
+    void PanelKapat(GameObject panel){panel.SetActive(false);anaIcerik.SetActive(true);}
+    RectTransform PanelOlustur(string ad,string baslik,string alt)
     {
-        var gorsel = Resources.Load<Texture2D>("Arayuz/acilis");
-        var arka = Cizim.Kutu("ArkaPlan", tuval, Cizim.Orta, Cizim.Orta, Cizim.Orta, Vector2.zero, Vector2.zero);
-        arka.SetAsFirstSibling();
-        if (gorsel != null)
-        {
-            var resim = arka.gameObject.AddComponent<RawImage>();
-            resim.texture = gorsel;
-            resim.raycastTarget = false;
-            var oran = arka.gameObject.AddComponent<AspectRatioFitter>();
-            oran.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
-            oran.aspectRatio = (float)gorsel.width / gorsel.height;
-        }
-
-        // Yazılar okunsun diye üstte ve altta hafif karartma
-        Cizim.Panel("UstGolge", tuval, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), Vector2.zero,
-            new Vector2(0f, 250f), new Color(0f, 0f, 0f, 0.45f)).transform.SetSiblingIndex(1);
-        Cizim.Panel("AltGolge", tuval, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), Vector2.zero,
-            new Vector2(0f, 230f), new Color(0f, 0f, 0f, 0.5f)).transform.SetSiblingIndex(2);
+        var r=PremiumTema.Pencere(guvenli,ad,new Vector2(1160,670),new Vector2(680,1200));
+        PremiumTema.Metin(r,"Etiket",alt,.06f,.86f,.70f,.05f,21,PremiumTema.Turkuaz,true);
+        PremiumTema.Metin(r,"Baslik",baslik,.06f,.75f,.85f,.10f,42,Color.white,true);
+        return r;
     }
-
-    // Bölüm seçimi: üstte 4, altta 3 düğme
     void BolumPaneliniKur()
     {
-        var perde = Cizim.Panel("BolumPaneli", transform, Vector2.zero, Vector2.one, Cizim.Orta, Vector2.zero, Vector2.zero,
-            new Color(0f, 0f, 0f, 0.85f));
-        bolumPaneli = perde.gameObject;
-        var baslik = Cizim.Yazi("Baslik", perde.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -70f), new Vector2(0f, 90f), 64, TextAnchor.MiddleCenter, Color.white);
-        baslik.text = "BÖLÜMLER";
-        baslik.fontStyle = FontStyle.Bold;
-
-        var bolumler = BolumListesi.Tumu;
-        for (int i = 0; i < bolumler.Length; i++)
-        {
-            var b = bolumler[i];
-            int satir = i < 4 ? 0 : 1, sutun = i < 4 ? i : i - 4;
-            float x = (sutun - (satir == 0 ? 1.5f : 1f)) * 440f;
-            float y = satir == 0 ? 130f : -140f;
-
-            bool bitti = PlayerPrefs.GetInt("bitti_" + b.no, 0) == 1;
-            int yildiz = BolumTemeli.EnIyiYildiz(b.no);
-            string durum = b.puanli
-                ? "<color=#FFD040>" + new string('★', yildiz) + "</color><color=#5A6A8A>" + new string('★', 3 - yildiz) + "</color>"
-                : bitti ? "<color=#9FE0A0>izlendi</color>" : "";
-            var renk = bitti ? new Color(0.14f, 0.4f, 0.3f, 0.95f) : new Color(0.1f, 0.2f, 0.42f, 0.95f);
-
-            var dugme = Cizim.Dugme("Bolum" + b.no, perde.transform, Cizim.Orta, Cizim.Orta, new Vector2(x, y), new Vector2(410f, 240f),
-                $"<size=30>BÖLÜM {b.no}</size>\n{b.ad}\n<size=44>{durum}</size>", 38, renk, out _);
-            string sahne = b.sahne;
-            dugmeler.Ekle(dugme, () => BolumuAc(sahne));
+        var panel=PanelOlustur("BolumPaneli","Yolculuk rotası","TÜM BÖLGELER AÇIK  /  İSTEDİĞİNİ SEÇ");bolumPaneli=panel.gameObject;
+        for(int i=0;i<BolumListesi.Tumu.Length;i++){
+            var b=BolumListesi.Tumu[i];int stars=Mathf.Clamp(BolumTemeli.EnIyiYildiz(b.no),0,3);
+            var r=PremiumTema.Kart(panel,"Bolum"+b.no,.06f+(i%4)*.225f,i<4?.405f:.095f,.205f,.285f,PremiumTema.Panel);PremiumTema.Uyarla(r,new Rect(.065f+(i%2)*.45f,.565f-(i/2)*.168f,.42f,.152f));
+            PremiumTema.BolgeResmi(r,b.no,.03f,.38f,.94f,.57f);
+            PremiumTema.Metin(r,"Ad",b.no.ToString("00")+"  "+VucutHaritasi.KisaAd(b.no),.07f,.13f,.86f,.25f,24,Color.white,true);
+            PremiumTema.Metin(r,"Durum",b.puanli?new string('★',stars)+new string('☆',3-stars):"GEZİNTİ",.07f,.035f,.86f,.12f,20,PremiumTema.Altin);
+            string scene=b.sahne;bolumDugmeleri.Ekle(r,()=>BolumuAc(scene));
         }
-        dugmeler.Ekle(Cizim.Dugme("Kapat", perde.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 50f),
-            new Vector2(360f, 96f), "KAPAT", 38, new Color(0.12f, 0.25f, 0.5f, 0.95f), out _), () => bolumPaneli.SetActive(false));
-        bolumPaneli.SetActive(false);
+        bolumDugmeleri.Ekle(PremiumTema.Dugme(panel,"Kapat","‹ Geri",.74f,.86f,.20f,.075f),()=>PanelKapat(bolumPaneli));bolumPaneli.SetActive(false);
     }
-
+    Text[] kartBilgiler=new Text[3];
     void KartPaneliniKur()
     {
-        var perde = Cizim.Panel("KartPaneli", transform, Vector2.zero, Vector2.one, Cizim.Orta, Vector2.zero, Vector2.zero,
-            new Color(0f, 0f, 0f, 0.8f));
-        kartPaneli = perde.gameObject;
-
-        var cerceve = Cizim.Panel("Kart", perde.transform, Cizim.Orta, Cizim.Orta, Cizim.Orta, new Vector2(0f, 30f),
-            new Vector2(1000f, 680f), new Color(1f, 0.6f, 0.15f));
-        var ic = Cizim.Panel("Ic", cerceve.transform, Vector2.zero, Vector2.one, Cizim.Orta, Vector2.zero, new Vector2(-24f, -24f),
-            new Color(1f, 0.97f, 0.88f));
-        kartBaslik = Cizim.Yazi("Baslik", ic.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -30f), new Vector2(-60f, 80f), 56, TextAnchor.MiddleCenter, new Color(0.8f, 0.25f, 0.3f));
-        kartBaslik.fontStyle = FontStyle.Bold;
-        kartGovde = Cizim.Yazi("Govde", ic.transform, Vector2.zero, Vector2.one, Cizim.Orta,
-            new Vector2(0f, -20f), new Vector2(-100f, -240f), 34, TextAnchor.UpperLeft, new Color(0.2f, 0.12f, 0.1f));
-        kartGovde.lineSpacing = 1.15f;
-        kartSayfa = Cizim.Yazi("Sayfa", ic.transform, Vector2.zero, new Vector2(1f, 0f), new Vector2(0.5f, 0f),
-            new Vector2(0f, 24f), new Vector2(-60f, 50f), 28, TextAnchor.MiddleCenter, new Color(0.45f, 0.35f, 0.3f));
-
-        var mavi = new Color(0.12f, 0.25f, 0.5f, 0.95f);
-        dugmeler.Ekle(Cizim.Dugme("Onceki", perde.transform, Cizim.Orta, Cizim.Orta, new Vector2(-620f, 30f),
-            new Vector2(130f, 200f), "◀", 70, mavi, out _), () => KartDegistir(-1));
-        dugmeler.Ekle(Cizim.Dugme("Sonraki", perde.transform, Cizim.Orta, Cizim.Orta, new Vector2(620f, 30f),
-            new Vector2(130f, 200f), "▶", 70, mavi, out _), () => KartDegistir(1));
-        dugmeler.Ekle(Cizim.Dugme("Kapat", perde.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 50f),
-            new Vector2(360f, 96f), "KAPAT", 38, mavi, out _), () => kartPaneli.SetActive(false));
-        kartPaneli.SetActive(false);
+        var panel=PanelOlustur("KartPaneli","Keşif koleksiyonu","ARAŞTIRMA ARŞİVİ");kartPaneli=panel.gameObject;
+        kartBaslik=PremiumTema.Metin(panel,"KartBaslik","",.07f,.64f,.86f,.09f,34,PremiumTema.Altin,true);
+        kartGovde=PremiumTema.Metin(panel,"BosKoleksiyon","",.10f,.25f,.80f,.34f,28,Color.white);
+        for(int i=0;i<3;i++){var row=PremiumTema.Kart(panel,"Bilgi"+i,.07f,.48f-i*.145f,.86f,.13f,PremiumTema.Panel);PremiumTema.Metin(row,"No",(i+1).ToString("00"),.03f,.15f,.08f,.70f,28,PremiumTema.Altin,true);kartBilgiler[i]=PremiumTema.Metin(row,"Metin","",.14f,.1f,.81f,.80f,27,Color.white);}
+        kartSayfa=PremiumTema.Metin(panel,"Sayfa","",.27f,.07f,.46f,.08f,22,PremiumTema.Soluk);kartSayfa.alignment=TextAnchor.MiddleCenter;
+        kartDugmeleri.Ekle(PremiumTema.Dugme(panel,"Onceki","‹",.07f,.055f,.16f,.09f),()=>KartDegistir(-1));kartDugmeleri.Ekle(PremiumTema.Dugme(panel,"Sonraki","›",.77f,.055f,.16f,.09f),()=>KartDegistir(1));
+        kartDugmeleri.Ekle(PremiumTema.Dugme(panel,"Kapat","‹ Geri",.74f,.86f,.20f,.075f),()=>PanelKapat(kartPaneli));kartPaneli.SetActive(false);
     }
 
     void KartlariAc()
@@ -165,7 +92,7 @@ public class AnaMenu : MonoBehaviour
             if (PlayerPrefs.HasKey("kart_baslik_" + b.no)) toplananKartlar.Add(b.no);
         }
         kartSirasi = 0;
-        kartPaneli.SetActive(true);
+        PanelAc(kartPaneli);
         KartiGoster();
     }
 
@@ -180,6 +107,8 @@ public class AnaMenu : MonoBehaviour
     void KartiGoster()
     {
         int toplam = BolumListesi.Tumu.Length;
+        foreach(var t in kartBilgiler)t.transform.parent.parent.gameObject.SetActive(toplananKartlar.Count>0);
+        kartGovde.transform.parent.gameObject.SetActive(toplananKartlar.Count==0);
         if (toplananKartlar.Count == 0)
         {
             kartBaslik.text = "VÜCUT KARTLARI";
@@ -189,8 +118,8 @@ public class AnaMenu : MonoBehaviour
         }
         int no = toplananKartlar[kartSirasi];
         kartBaslik.text = PlayerPrefs.GetString("kart_baslik_" + no);
-        kartGovde.text = PlayerPrefs.GetString("kart_metin_" + no);
-        kartSayfa.text = $"Kart {kartSirasi + 1} / {toplananKartlar.Count}     (toplam {toplam} kartın {toplananKartlar.Count} tanesi sende)";
+        var lines=PlayerPrefs.GetString("kart_metin_"+no).Split(new[]{'•'},System.StringSplitOptions.RemoveEmptyEntries);for(int i=0;i<3;i++)kartBilgiler[i].text=i<lines.Length?lines[i].Trim():"";
+        kartSayfa.text = $"{kartSirasi + 1} / {toplananKartlar.Count} kart";
     }
 
     static void BolumuAc(string sahne)
@@ -200,7 +129,7 @@ public class AnaMenu : MonoBehaviour
             Debug.LogError("Bölüm sahnesi derleme listesinde yok: " + sahne);
             return;
         }
-        SceneManager.LoadScene(sahne);
+        YuklemeEkrani.Ac(sahne);
     }
 
     void Update()
@@ -214,26 +143,28 @@ public class AnaMenu : MonoBehaviour
             Cizim.GuvenliAlaniUygula(guvenli);
         }
 
-        if (dugmeler.Isle()) return;
+        if (YuklemeEkrani.Yukleniyor) return;
+        if(harita.Acik){harita.Isle();return;}
+        if ((kartPaneli.activeSelf ? kartDugmeleri : bolumPaneli.activeSelf ? bolumDugmeleri : anaDugmeler).Isle()) return;
 
         var kb = Keyboard.current;
         if (kb == null) return;
         if (kartPaneli.activeSelf)
         {
-            if (kb.escapeKey.wasPressedThisFrame || kb.kKey.wasPressedThisFrame) kartPaneli.SetActive(false);
+            if (kb.escapeKey.wasPressedThisFrame || kb.kKey.wasPressedThisFrame) PanelKapat(kartPaneli);
             else if (kb.leftArrowKey.wasPressedThisFrame) KartDegistir(-1);
             else if (kb.rightArrowKey.wasPressedThisFrame) KartDegistir(1);
             return;
         }
         if (bolumPaneli.activeSelf)
         {
-            if (kb.escapeKey.wasPressedThisFrame || kb.bKey.wasPressedThisFrame) bolumPaneli.SetActive(false);
+            if (kb.escapeKey.wasPressedThisFrame || kb.bKey.wasPressedThisFrame) PanelKapat(bolumPaneli);
         }
         else if (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)
         {
             BolumuAc(BolumListesi.Tumu[SiradakiBolum()].sahne);
         }
-        else if (kb.bKey.wasPressedThisFrame) bolumPaneli.SetActive(true);
+        else if (kb.bKey.wasPressedThisFrame) PanelAc(bolumPaneli);
         if (kb.kKey.wasPressedThisFrame) KartlariAc();
         Key[] rakamlar = { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7 };
         for (int i = 0; i < rakamlar.Length && i < BolumListesi.Tumu.Length; i++)
