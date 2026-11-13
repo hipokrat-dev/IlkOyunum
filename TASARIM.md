@@ -24,18 +24,22 @@ Her bölüm sonunda bir **Vücut Kartı** açılır (o organla ilgili 3 ilginç 
 
 ## Varsayılan kararlar (değiştirilebilir)
 - **Hedef kitle:** 8–14 yaş çocuklar/gençler; aileler.
-- **Görsel tarz:** Sevimli, çizgi film; yuvarlak hatlar, parlak renkler, gülen/yaramaz mikroplar. Ürkütücü/gerçekçi değil.
+- **Görsel tarz:** Hiper gerçekçi. Islak ve parlak dokular, gerçek anatomiye uygun dişler/dil/diş eti, mikroskop görüntülerine benzeyen bakteri kolonileri, sinematik ışık ve kamera (far ışığı, alan derinliği, film greni). Çizgi film öğesi (gözlü/gülen mikrop vb.) yok.
 - **Savaş:** Şiddetsiz — araç "temizleme köpüğü" atar, mikroplar köpükle eriyip kaybolur.
 - **Kontroller:** WASD / ok tuşları ile sürüş, Boşluk ile köpük atma.
 - **Kamera:** Aracı arkadan-üstten takip eden 3. şahıs kamera.
 - **Dil:** Türkçe (ileride İngilizce eklenebilir).
 
 ## İlk hedef (MVP): Bölüm 1 — Ağız
-- Pembe dil zemini, etrafta büyük beyaz dişler; dişlerin dibinde yeşil mikroplar.
+- Dil zemini, alt ve üst çenede anatomik dizilimle dişler (kesici, köpek, küçük azı, azı); dişlerin dibinde çürük bakterisi kolonileri ve plak lekeleri.
 - Araç sürülebilir, köpük atılabilir; mikrop sayacı (ör. 10 mikrop).
 - Ara sıra gelen tükürük dalgası aracı iter.
 - Profesörün telsiz mesajları (ekranın altında konuşma kutusu).
 - 10 mikrop temizlenince: Vücut Kartı (Ağız) → "Yutkunma refleksi geliyor!" → bölüm sonu.
-- Başlangıçta basit şekillerle (küre, kapsül, küp) yapılır, sonra güzelleştirilir.
+- Bölüm çalışma anında kodla kurulur (`Assets/Scripts/Agiz/AgizBolumu.cs`).
+- Dişler, diş eti, bakteri kolonileri ve dil/mukoza dokuları Blender'da üretilir:
+  `Araclar/blender/agiz_modelleri.py` çalıştırılınca `Assets/Resources/Agiz` klasörüne FBX ve PNG dokular yazılır.
+- Araç da Blender'da üretilir: `Araclar/blender/arac_modeli.py` → `Assets/Resources/Ortak` (tüm bölümlerde kullanılır).
+- Tükürük dalgası ve köpük hâlâ basit şekillerden oluşuyor; sıradaki görsel iş bunlar.
 
 Ağız bölümü bitip oynanabilir olunca diğer bölümler aynı altyapı üzerine tek tek eklenir.

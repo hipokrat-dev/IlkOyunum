@@ -142,3 +142,6 @@ crashlytics-build.properties
 # IDE
 .vscode/
 .idea/
+
+# Python önbelleği (Blender scriptleri)
+__pycache__/
